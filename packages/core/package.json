@@ -1,0 +1,48 @@
+{
+  "name": "@big-eye/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/db/prisma.js",
+  "types": "./dist/db/prisma.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/db/prisma.d.ts",
+      "import": "./dist/db/prisma.js"
+    },
+    "./db/prisma": {
+      "types": "./dist/db/prisma.d.ts",
+      "import": "./dist/db/prisma.js"
+    },
+    "./db/prisma-client": {
+      "types": "./dist/db/prisma-client.d.ts",
+      "import": "./dist/db/prisma-client.js"
+    }
+  },
+  "files": ["dist", "prisma"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
+    "db:seed": "prisma db seed",
+    "db:test:prepare": "tsx prisma/test-fixtures/prepare-auth.ts",
+    "lint": "eslint --config ../../packages/config/eslint.cjs src prisma",
+    "postinstall": "prisma generate",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.prisma.json"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "eslint": "^8.57.1",
+    "prisma": "^6.5.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.8"
+  }
+}

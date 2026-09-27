@@ -49,5 +49,11 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Prepare local Supabase auth fixture
+        run: pnpm --filter @big-eye/core db:test:prepare
+      - name: Apply database migrations
+        run: pnpm --filter @big-eye/core db:migrate
+      - name: Seed database
+        run: pnpm --filter @big-eye/core db:seed
       - name: Lint, typecheck, and test
         run: pnpm turbo run lint typecheck test

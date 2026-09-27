@@ -126,8 +126,8 @@ git commit -m "feat(contracts): add module catalog, zod schemas and error codes"
 - Produces: `export const prisma: PrismaClient`; enums `Role`, `UserStatus`, `CreditTxType`, `RefType`, `QueryMode`, `QueryStatus`, `PaymentStatus`, `PaymentMethod`; modelos `Profile`, `Wallet`, `CreditTransaction`, `Query`, `QueryEvent`, `CreditPackage`, `Payment`, `WebhookEvent`, `AdminAuditLog`.
 - Consumes: `DATABASE_URL`/`DIRECT_URL` (task 1).
 
-- [ ] **Step 1: Escrever o schema Prisma** conforme a seção 5 da spec. Pontos exatos: `Wallet.balance Int @default(0)`; `CreditTransaction.idempotencyKey String? @unique`; índice único `@@unique([refType, refId, type])`; `Query.input Json?`; índices `@@index([userId, createdAt])` e `@@index([status, nextPollAt])`; `WebhookEvent.providerEventId String @unique`; `Payment.amountCents Int`, `Payment.credits Int`.
-- [ ] **Step 2: Migração do trigger de auth** (`auth_trigger`), SQL cru:
+- [x] **Step 1: Escrever o schema Prisma** conforme a seção 5 da spec. Pontos exatos: `Wallet.balance Int @default(0)`; `CreditTransaction.idempotencyKey String? @unique`; índice único `@@unique([refType, refId, type])`; `Query.input Json?`; índices `@@index([userId, createdAt])` e `@@index([status, nextPollAt])`; `WebhookEvent.providerEventId String @unique`; `Payment.amountCents Int`, `Payment.credits Int`.
+- [x] **Step 2: Migração do trigger de auth** (`auth_trigger`), SQL cru:
 
 ```sql
 create or replace function public.handle_new_user()
@@ -148,9 +148,9 @@ create trigger on_auth_user_created
 ```
 
   Proteger com `if exists (select 1 from information_schema.schemata where schema_name='auth')` para não quebrar em Postgres sem Supabase (testes locais usam o mesmo Postgres do docker-compose — criar schemas `auth` e uma tabela `auth.users` mínima numa migração de teste).
-- [ ] **Step 3: Seed** com 3 `credit_packages` (ex.: 10/50/100 créditos, preços em centavos) e um usuário admin de desenvolvimento (`profile.role = 'admin'`).
-- [ ] **Step 4: Teste de integração do débito atômico** (a base do task 5): duas transações concorrentes tentando debitar o mesmo wallet com saldo 1 — exatamente uma passa. Escrever o teste usando `prisma.$transaction` com `SELECT ... FOR UPDATE` via `$queryRaw`.
-- [ ] **Step 5:** Rodar `prisma migrate deploy` + `prisma db seed` + teste, e commitar.
+- [x] **Step 3: Seed** com 3 `credit_packages` (ex.: 10/50/100 créditos, preços em centavos) e um usuário admin de desenvolvimento (`profile.role = 'admin'`).
+- [x] **Step 4: Teste de integração do débito atômico** (a base do task 5): duas transações concorrentes tentando debitar o mesmo wallet com saldo 1 — exatamente uma passa. Escrever o teste usando `prisma.$transaction` com `SELECT ... FOR UPDATE` via `$queryRaw`.
+- [x] **Step 5:** Rodar `prisma migrate deploy` + `prisma db seed` + teste, e commitar.
 
 ```bash
 git add -A
