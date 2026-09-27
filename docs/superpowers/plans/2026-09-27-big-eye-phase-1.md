@@ -198,10 +198,10 @@ git commit -m "feat(core): prisma schema, auth trigger, seed and wallet lock tes
   - Erros: `InsufficientCreditsError`, `DuplicateTransactionError`.
 - Consumes: `prisma` (task 3).
 
-- [ ] **Step 1: Testes (Vitest + Postgres de teste).** Casos: débito com saldo suficiente atualiza `balance` e cria ledger com `balance_after` correto; débito com saldo insuficiente lança e não altera nada; **refund duas vezes só aplica uma**; **purchase repetido do mesmo payment só credita uma vez**; débito concorrente (20 paralelos, saldo 5) → exatamente 5 sucessos.
-- [ ] **Step 2:** Rodar e ver falhar.
-- [ ] **Step 3: Implementar `CreditsService`** — toda operação recebe `tx: Prisma.TransactionClient`, faz `SELECT ... FOR UPDATE` no wallet, insere em `credit_transactions` e atualiza `wallets.balance`. `balance_after` = saldo após a operação. Idempotência apoiada em `idempotencyKey` e no índice único `(refType, refId, type)` — capturar `P2002` e traduzir para `DuplicateTransactionError`.
-- [ ] **Step 4:** Testes PASS. Commit:
+- [x] **Step 1: Testes (Vitest + Postgres de teste).** Casos: débito com saldo suficiente atualiza `balance` e cria ledger com `balance_after` correto; débito com saldo insuficiente lança e não altera nada; **refund duas vezes só aplica uma**; **purchase repetido do mesmo payment só credita uma vez**; débito concorrente (20 paralelos, saldo 5) → exatamente 5 sucessos.
+- [x] **Step 2:** Rodar e ver falhar.
+- [x] **Step 3: Implementar `CreditsService`** — toda operação recebe `tx: Prisma.TransactionClient`, faz `SELECT ... FOR UPDATE` no wallet, insere em `credit_transactions` e atualiza `wallets.balance`. `balance_after` = saldo após a operação. Idempotência apoiada em `idempotencyKey` e no índice único `(refType, refId, type)` — capturar `P2002` e traduzir para `DuplicateTransactionError`.
+- [x] **Step 4:** Testes PASS. Commit:
 
 ```bash
 git commit -m "feat(core): credits ledger service with lock, idempotency and refunds"

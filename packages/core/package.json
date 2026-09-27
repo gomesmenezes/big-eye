@@ -17,6 +17,10 @@
     "./db/prisma-client": {
       "types": "./dist/db/prisma-client.d.ts",
       "import": "./dist/db/prisma-client.js"
+    },
+    "./credits/credits.service": {
+      "types": "./dist/credits/credits.service.d.ts",
+      "import": "./dist/credits/credits.service.js"
     }
   },
   "files": ["dist", "prisma"],
