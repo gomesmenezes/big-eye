@@ -73,7 +73,7 @@ git commit -m "chore: bootstrap pnpm+turborepo monorepo with docker-compose and 
   - `const ERROR_CODES` (objeto `as const`) e `type ErrorCode`
   - DTOs Zod: `CreateQueryBody`, `QueryDTO`, `MeDTO`, `TransactionDTO`, `PackageDTO`, `PaymentDTO`, `AdminAdjustWalletBody`
 
-- [ ] **Step 1: Escrever os testes do catálogo**
+- [x] **Step 1: Escrever os testes do catálogo**
 
 ```ts
 import { MODULES, getModule } from './index';
@@ -98,13 +98,13 @@ test('getModule encontra por slug e devolve undefined para desconhecido', () => 
 });
 ```
 
-- [ ] **Step 2:** Rodar `pnpm --filter @big-eye/contracts test` e ver falhar (módulos não existem).
-- [ ] **Step 3: Implementar o catálogo.** `MODULES` contém os ~30 módulos do spec (nome, categoria, tags, descrição, `destaque` para os ESPECIAIS, `custoCreditos: 1`), todos com `mode` definido. Dois implementados de verdade: `cpf-basico` (`sync`) e `dossie-360` (`async`), com `input`/`output` Zod reais:
+- [x] **Step 2:** Rodar `pnpm --filter @big-eye/contracts test` e ver falhar (módulos não existem).
+- [x] **Step 3: Implementar o catálogo.** `MODULES` contém os ~30 módulos do spec (nome, categoria, tags, descrição, `destaque` para os ESPECIAIS, `custoCreditos: 1`), todos com `mode` definido. Dois implementados de verdade: `cpf-basico` (`sync`) e `dossie-360` (`async`), com `input`/`output` Zod reais:
   - `cpf-basico.input = z.object({ cpf: z.string().regex(/^\d{11}$/) })`; `output` com `nome`, `cpf`, `nascimento?`, `situacao?`.
   - `dossie-360.input = z.object({ cpf: z.string().regex(/^\d{11}$/) })`; `output` com `resumo`, `fontes: z.array(z.string())`.
   - Os demais entram com `implemented: false`, um `input`/`output` placeholder **explicitamente marcado** (`z.object({ cpf: z.string() })` e `z.record(z.unknown())`) — a fase 2 troca pelos schemas reais.
-- [ ] **Step 4: Implementar `ERROR_CODES` e os DTOs** (`errors.ts`, `dto.ts`) com os nomes exatos usados pelo `api` (`INSUFFICIENT_CREDITS`, `MODULE_NOT_FOUND`, `INVALID_INPUT`, `QUERY_FAILED`, `PROVIDER_UNAVAILABLE`, `PAYMENT_NOT_FOUND`, `FORBIDDEN`, `UNAUTHORIZED`).
-- [ ] **Step 5:** Rodar os testes, garantir PASS, e commitar.
+- [x] **Step 4: Implementar `ERROR_CODES` e os DTOs** (`errors.ts`, `dto.ts`) com os nomes exatos usados pelo `api` (`INSUFFICIENT_CREDITS`, `MODULE_NOT_FOUND`, `INVALID_INPUT`, `QUERY_FAILED`, `PROVIDER_UNAVAILABLE`, `PAYMENT_NOT_FOUND`, `FORBIDDEN`, `UNAUTHORIZED`).
+- [x] **Step 5:** Rodar os testes, garantir PASS, e commitar.
 
 ```bash
 git add -A
