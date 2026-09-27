@@ -1,0 +1,12 @@
+{
+  "extends": "../../packages/config/tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "types": ["node"],
+    "paths": {
+      "@big-eye/contracts": ["packages/contracts/src/index.ts"],
+      "@big-eye/core/*": ["packages/core/src/*"]
+    }
+  },
+  "include": ["src/**/*.ts"]
+}

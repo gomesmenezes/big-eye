@@ -10,6 +10,7 @@ const validEnvironment = {
   SUPABASE_JWKS_URL: 'https://example.supabase.co/auth/v1/.well-known/jwks.json',
   SUPABASE_SERVICE_ROLE_KEY: 'test-service-role-key',
   PAYMENT_PROVIDER: 'fake',
+  FAKE_PAYMENT_SECRET: 'test-fake-payment-secret',
   PROVIDER_MODE: 'fake',
   WEB_ORIGIN: 'http://localhost:3000,https://app.example.com',
   API_PORT: '3001',

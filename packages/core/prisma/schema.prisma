@@ -124,6 +124,7 @@ model Query {
   inputHash         String       @map("input_hash") @db.VarChar(64)
   inputMasked       String       @map("input_masked") @db.Text
   input             Json?
+  idempotencyKey    String?      @map("idempotency_key") @db.Text
   providerRequestId String?      @map("provider_request_id") @db.Text
   attempts          Int          @default(0)
   nextPollAt        DateTime?    @map("next_poll_at") @db.Timestamptz(6)
@@ -135,6 +136,7 @@ model Query {
   profile           Profile      @relation(fields: [userId], references: [id], onDelete: Restrict)
   events            QueryEvent[]
 
+  @@unique([userId, idempotencyKey])
   @@index([userId, createdAt(sort: Desc)])
   @@index([status, nextPollAt])
   @@map("queries")

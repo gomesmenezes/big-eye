@@ -6,6 +6,7 @@
     "sourceMap": true,
     "paths": {
       "@big-eye/contracts": ["packages/contracts/dist/index.d.ts"],
+      "@big-eye/core/payments": ["packages/core/dist/payments/index.d.ts"],
       "@big-eye/core/*": ["packages/core/dist/*"]
     }
   },

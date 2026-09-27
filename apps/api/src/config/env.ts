@@ -26,6 +26,7 @@ const environmentSchema = z.object({
   SUPABASE_JWKS_URL: httpUrl,
   SUPABASE_SERVICE_ROLE_KEY: z.string().trim().min(1),
   PAYMENT_PROVIDER: z.enum(['fake', 'mercado-pago', 'pagarme']),
+  FAKE_PAYMENT_SECRET: z.string().trim().min(1),
   PROVIDER_MODE: z.enum(['fake', 'upstream']),
   WEB_ORIGIN: z.string().trim().min(1),
   API_PORT: z.coerce.number().int().min(1).max(65_535),

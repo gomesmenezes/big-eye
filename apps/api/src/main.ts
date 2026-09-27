@@ -11,6 +11,7 @@ import { env } from './config/env.js';
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter(), {
     bufferLogs: true,
+    rawBody: true,
   });
 
   app.useLogger(new AppLogger('BigEyeAPI'));

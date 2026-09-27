@@ -1,0 +1,28 @@
+{
+  "name": "@big-eye/worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/main.js",
+    "start:dev": "tsx watch src/main.ts",
+    "lint": "eslint --config ../../packages/config/eslint.cjs src",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@big-eye/contracts": "workspace:*",
+    "@big-eye/core": "workspace:*",
+    "bullmq": "^5.63.0",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "eslint": "^8.57.1",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^3.0.8"
+  }
+}

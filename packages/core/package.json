@@ -21,9 +21,80 @@
     "./credits/credits.service": {
       "types": "./dist/credits/credits.service.d.ts",
       "import": "./dist/credits/credits.service.js"
+    },
+    "./provider/provider.client": {
+      "types": "./dist/provider/provider.client.d.ts",
+      "import": "./dist/provider/provider.client.js"
+    },
+    "./provider/fake.provider": {
+      "types": "./dist/provider/fake.provider.d.ts",
+      "import": "./dist/provider/fake.provider.js"
+    },
+    "./provider/registry": {
+      "types": "./dist/provider/registry.d.ts",
+      "import": "./dist/provider/registry.js"
+    },
+    "./queries/queries.service": {
+      "types": "./dist/queries/queries.service.d.ts",
+      "import": "./dist/queries/queries.service.js"
+    },
+    "./queries/mask": {
+      "types": "./dist/queries/mask.d.ts",
+      "import": "./dist/queries/mask.js"
+    },
+    "./queries/reconcile.service": {
+      "types": "./dist/queries/reconcile.service.d.ts",
+      "import": "./dist/queries/reconcile.service.js"
+    },
+    "./queries/input-retry-cache": {
+      "types": "./dist/queries/input-retry-cache.d.ts",
+      "import": "./dist/queries/input-retry-cache.js"
+    },
+    "./queries/query-lock": {
+      "types": "./dist/queries/query-lock.d.ts",
+      "import": "./dist/queries/query-lock.js"
+    },
+    "./queues/queues": {
+      "types": "./dist/queues/queues.d.ts",
+      "import": "./dist/queues/queues.js"
+    },
+    "./query-events": {
+      "types": "./dist/query-events.d.ts",
+      "import": "./dist/query-events.js"
+    },
+    "./result-cache": {
+      "types": "./dist/result-cache.d.ts",
+      "import": "./dist/result-cache.js"
+    },
+    "./redis": {
+      "types": "./dist/redis.d.ts",
+      "import": "./dist/redis.js"
+    },
+    "./payments/payment-provider": {
+      "types": "./dist/payments/payment-provider.d.ts",
+      "import": "./dist/payments/payment-provider.js"
+    },
+    "./payments/fake.provider": {
+      "types": "./dist/payments/fake.provider.d.ts",
+      "import": "./dist/payments/fake.provider.js"
+    },
+    "./payments/provider-registry": {
+      "types": "./dist/payments/provider-registry.d.ts",
+      "import": "./dist/payments/provider-registry.js"
+    },
+    "./payments/payments.service": {
+      "types": "./dist/payments/payments.service.d.ts",
+      "import": "./dist/payments/payments.service.js"
+    },
+    "./payments": {
+      "types": "./dist/payments/index.d.ts",
+      "import": "./dist/payments/index.js"
     }
   },
-  "files": ["dist", "prisma"],
+  "files": [
+    "dist",
+    "prisma"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "db:generate": "prisma generate",
@@ -39,7 +110,11 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
-    "@prisma/client": "^6.5.0"
+    "@big-eye/contracts": "workspace:*",
+    "@prisma/client": "^6.5.0",
+    "bullmq": "^5.63.0",
+    "ioredis": "^5.4.1",
+    "zod": "^3.25.0"
   },
   "devDependencies": {
     "@types/node": "^22.13.10",

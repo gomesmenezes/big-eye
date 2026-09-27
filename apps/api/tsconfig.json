@@ -7,6 +7,7 @@
     "noImplicitOverride": true,
     "paths": {
       "@big-eye/contracts": ["packages/contracts/src/index.ts"],
+      "@big-eye/core/payments": ["packages/core/src/payments/index.ts"],
       "@big-eye/core/*": ["packages/core/src/*"]
     }
   },
