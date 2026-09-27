@@ -5,3 +5,10 @@ dist
 .env.local
 .turbo
 coverage
+.env.*
+!.env.example
+.pnpm-store/
+pnpm-debug.log*
+*.tsbuildinfo
+playwright-report/
+test-results/

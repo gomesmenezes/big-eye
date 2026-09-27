@@ -45,11 +45,11 @@ Classes de entrada / modos de falha que a spec implica e que tendem a morder —
 **Interfaces:**
 - Produces: workspaces `apps/*`, `packages/*`; script raiz `pnpm turbo lint typecheck test build`; `packages/config/tsconfig.base.json` (strict, `target: ES2022`, `module: NodeNext`, `moduleResolution: NodeNext`); Postgres local em `localhost:5432` (db `bigeye`, user `bigeye`, pass `bigeye`) e Redis em `localhost:6379`.
 
-- [ ] **Step 1:** Criar `pnpm-workspace.yaml` com `packages: ['apps/*', 'packages/*']` e o `package.json` raiz com `packageManager: "pnpm@9"`, `engines.node: ">=22"` e scripts delegando ao Turbo.
-- [ ] **Step 2:** `packages/config`: `tsconfig.base.json` (strict, ES2022, NodeNext, `paths` para `@big-eye/*`), `eslint.cjs` (typescript-eslint + import order) e `prettier.cjs`. `turbo.json` com pipelines `build` (depende de `^build`), `lint`, `typecheck`, `test`.
-- [ ] **Step 3:** `docker-compose.yml` com serviços `postgres:16` e `redis:7` (volumes nomeados, healthchecks). `.env.example` com `DATABASE_URL`, `DIRECT_URL`, `REDIS_URL`, `SUPABASE_URL`, `SUPABASE_JWKS_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `PAYMENT_PROVIDER=fake`, `PROVIDER_MODE=fake`, `WEB_ORIGIN`, `API_PORT`, `QUERY_TIMEOUT_MS`, `RESULT_TTL_SECONDS`.
-- [ ] **Step 4:** `.github/workflows/ci.yml`: setup pnpm + Node 22, `pnpm install --frozen-lockfile`, subir Postgres/Redis como services, `pnpm turbo lint typecheck test`.
-- [ ] **Step 5:** Validar: `docker compose up -d`, `pnpm install`, `pnpm turbo typecheck` (vazio, deve passar) e commitar.
+- [x] **Step 1:** Criar `pnpm-workspace.yaml` com `packages: ['apps/*', 'packages/*']` e o `package.json` raiz com `packageManager: "pnpm@9"`, `engines.node: ">=22"` e scripts delegando ao Turbo.
+- [x] **Step 2:** `packages/config`: `tsconfig.base.json` (strict, ES2022, NodeNext, `paths` para `@big-eye/*`), `eslint.cjs` (typescript-eslint + import order) e `prettier.cjs`. `turbo.json` com pipelines `build` (depende de `^build`), `lint`, `typecheck`, `test`.
+- [x] **Step 3:** `docker-compose.yml` com serviços `postgres:16` e `redis:7` (volumes nomeados, healthchecks). `.env.example` com `DATABASE_URL`, `DIRECT_URL`, `REDIS_URL`, `SUPABASE_URL`, `SUPABASE_JWKS_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `PAYMENT_PROVIDER=fake`, `PROVIDER_MODE=fake`, `WEB_ORIGIN`, `API_PORT`, `QUERY_TIMEOUT_MS`, `RESULT_TTL_SECONDS`.
+- [x] **Step 4:** `.github/workflows/ci.yml`: setup pnpm + Node 22, `pnpm install --frozen-lockfile`, subir Postgres/Redis como services, `pnpm turbo lint typecheck test`.
+- [x] **Step 5:** Validar: `docker compose up -d`, `pnpm install`, `pnpm turbo typecheck` (vazio, deve passar) e commitar.
 
 ```bash
 git add -A
