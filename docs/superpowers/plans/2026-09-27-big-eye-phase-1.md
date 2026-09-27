@@ -172,12 +172,12 @@ git commit -m "feat(core): prisma schema, auth trigger, seed and wallet lock tes
 - Produces: `AuthGuard` global (valida Bearer via JWKS, anexa `req.user = { id, email, role, status }`); `@Public()`; `@CurrentUser()`; `AdminGuard`; `SuspendedGuard`; `GET /me` → `MeDTO` (`{ id, email, name, role, balance }`).
 - Consumes: `prisma`, `MODULES`, `ERROR_CODES`.
 
-- [ ] **Step 1: Bootstrap** NestJS com `FastifyAdapter`, CORS com allowlist (`WEB_ORIGIN`), `helmet`, `@nestjs/throttler` (global) e Swagger em `/docs` gerado a partir dos DTOs Zod (`nestjs-zod`).
-- [ ] **Step 2: Config Zod** (`env.ts`) validando todas as envs no boot; falhar rápido com mensagem clara.
-- [ ] **Step 3: `JwtVerifier`** — `createRemoteJWKSet(new URL(env.SUPABASE_JWKS_URL))` + `jwtVerify(token, jwks, { audience: 'authenticated' })`. Retorna `{ sub, email }`.
-- [ ] **Step 4: Guard + teste unitário.** Teste cobre: token ausente → 401; token inválido/expirado → 401; token válido → `req.user` populado; `status=suspended` → 403.
-- [ ] **Step 5: `GET /me`** — lê `profiles` + `wallets.balance`; 404 se o profile não existir (trigger atrasado) com log de aviso. E2E com um JWT de teste assinado por um JWKS local.
-- [ ] **Step 6:** `pnpm --filter @big-eye/api test` PASS, `git commit -m "feat(api): bootstrap nestjs with supabase jwks auth and guards"`.
+- [x] **Step 1: Bootstrap** NestJS com `FastifyAdapter`, CORS com allowlist (`WEB_ORIGIN`), `helmet`, `@nestjs/throttler` (global) e Swagger em `/docs` gerado a partir dos DTOs Zod (`nestjs-zod`).
+- [x] **Step 2: Config Zod** (`env.ts`) validando todas as envs no boot; falhar rápido com mensagem clara.
+- [x] **Step 3: `JwtVerifier`** — `createRemoteJWKSet(new URL(env.SUPABASE_JWKS_URL))` + `jwtVerify(token, jwks, { audience: 'authenticated' })`. Retorna `{ sub, email }`.
+- [x] **Step 4: Guard + teste unitário.** Teste cobre: token ausente → 401; token inválido/expirado → 401; token válido → `req.user` populado; `status=suspended` → 403.
+- [x] **Step 5: `GET /me`** — lê `profiles` + `wallets.balance`; 404 se o profile não existir (trigger atrasado) com log de aviso. E2E com um JWT de teste assinado por um JWKS local.
+- [x] **Step 6:** `pnpm --filter @big-eye/api test` PASS, `git commit -m "feat(api): bootstrap nestjs with supabase jwks auth and guards"`.
 
 ---
 

@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "sourceMap": true,
+    "paths": {
+      "@big-eye/contracts": ["packages/contracts/dist/index.d.ts"],
+      "@big-eye/core/*": ["packages/core/dist/*"]
+    }
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["test", "src/**/*.test.ts", "dist", "node_modules"]
+}
