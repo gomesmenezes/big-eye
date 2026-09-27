@@ -34,7 +34,11 @@ function selected<T extends object>(query: FakeQuery, select: Record<string, boo
 }
 
 function createHarness(provider: {
-  execute(request: { module: string; input: Record<string, unknown> }): Promise<
+  execute(request: {
+    module: string;
+    input: Record<string, unknown>;
+    idempotencyKey?: string;
+  }): Promise<
     | { kind: 'accepted'; requestId: string }
     | { kind: 'result'; data: unknown }
   >;
@@ -153,8 +157,10 @@ function createHarness(provider: {
 
 describe('async query processors', () => {
   it('transitions accepted queries through polling and stores the result in Redis cache', async () => {
+    let receivedIdempotencyKey: string | undefined;
     const harness = createHarness({
-      async execute() {
+      async execute(request) {
+        receivedIdempotencyKey = request.idempotencyKey;
         return { kind: 'accepted', requestId: 'provider-request-7' };
       },
       async poll() {
@@ -174,6 +180,7 @@ describe('async query processors', () => {
 
     await new QueryRunProcessor(harness.dependencies).process({ queryId: harness.query.id });
     expect(harness.query.status).toBe(QueryStatus.running);
+    expect(receivedIdempotencyKey).toBe(harness.query.id);
     expect(harness.jobs[0]?.data).toMatchObject({
       queryId: harness.query.id,
       requestId: 'provider-request-7',
@@ -217,5 +224,102 @@ describe('async query processors', () => {
     expect((harness.dependencies as WorkerDependencies & { refunded: string[] }).refunded).toEqual([
       harness.query.id,
     ]);
+  });
+
+  it('does not enqueue a poll after reconciliation wins an accepted result race', async () => {
+    const harness = createHarness({
+      async execute() {
+        // Simulate reconciliation (or an admin refund) winning while the
+        // provider call is still in flight.
+        harness.query.status = QueryStatus.refunded;
+        return { kind: 'accepted', requestId: 'provider-request-race' };
+      },
+      async poll() {
+        return { kind: 'result', data: { resumo: 'não deveria executar' } };
+      },
+    });
+
+    await new QueryRunProcessor(harness.dependencies).process({
+      queryId: harness.query.id,
+    });
+
+    expect(harness.jobs).toEqual([]);
+    expect(harness.query.providerRequestId).toBeNull();
+  });
+
+  it('does not enqueue a stale poll after a terminal transition', async () => {
+    const harness = createHarness({
+      async execute() {
+        return { kind: 'accepted', requestId: 'provider-request-current' };
+      },
+      async poll() {
+        harness.query.status = QueryStatus.refunded;
+        return { kind: 'accepted', requestId: 'provider-request-current' };
+      },
+    });
+    harness.query.status = QueryStatus.running;
+    harness.query.providerRequestId = 'provider-request-current';
+
+    await new QueryPollProcessor(harness.dependencies).process({
+      queryId: harness.query.id,
+      requestId: 'provider-request-current',
+      attempt: 0,
+    });
+
+    expect(harness.jobs).toEqual([]);
+    expect(harness.query.attempts).toBe(0);
+  });
+
+  it('normalizes unknown provider errors before exposing the query failure', async () => {
+    const harness = createHarness({
+      async execute() {
+        return { kind: 'accepted', requestId: 'provider-request-unknown-error' };
+      },
+      async poll() {
+        throw Object.assign(new Error('upstream timeout'), {
+          code: 'UPSTREAM_TIMEOUT',
+        });
+      },
+    });
+    harness.query.status = QueryStatus.running;
+    harness.query.providerRequestId = 'provider-request-unknown-error';
+
+    await new QueryPollProcessor(harness.dependencies).process({
+      queryId: harness.query.id,
+      requestId: 'provider-request-unknown-error',
+      attempt: 0,
+    });
+
+    expect(harness.query.status).toBe(QueryStatus.refunded);
+    expect(harness.query.errorCode).toBe('QUERY_FAILED');
+    expect(harness.jobs).toEqual([]);
+  });
+
+  it('does not let an old poll complete a query after an admin retry starts', async () => {
+    const harness = createHarness({
+      async execute() {
+        return { kind: 'accepted', requestId: 'provider-request-new' };
+      },
+      async poll() {
+        harness.query.providerRequestId = 'provider-request-new';
+        harness.query.startedAt = new Date('2026-09-27T12:00:01.000Z');
+        return {
+          kind: 'result',
+          data: { resumo: 'resultado antigo', fontes: ['stale-poll'] },
+        };
+      },
+    });
+    harness.query.status = QueryStatus.running;
+    harness.query.providerRequestId = 'provider-request-old';
+    harness.query.startedAt = new Date('2026-09-27T12:00:00.000Z');
+
+    await new QueryPollProcessor(harness.dependencies).process({
+      queryId: harness.query.id,
+      requestId: 'provider-request-old',
+      attempt: 0,
+    });
+
+    expect(harness.query.status).toBe(QueryStatus.running);
+    await expect(harness.cache.get(harness.query.id)).resolves.toBeNull();
   });
 });

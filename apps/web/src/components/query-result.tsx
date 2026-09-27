@@ -42,7 +42,7 @@ export function QueryResult({ query, isStreaming = false, onRetry }: QueryResult
         </span>
       </div>
 
-      {isStreaming || !terminal ? (
+      {isStreaming ? (
         <div className="mt-8 rounded-xl bg-petrol-50 p-5">
           <div className="flex items-center gap-3">
             <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-petrol-600" />
@@ -51,6 +51,13 @@ export function QueryResult({ query, isStreaming = false, onRetry }: QueryResult
           <div className="mt-4 h-2 overflow-hidden rounded-full bg-petrol-100">
             <div className="h-full w-2/3 animate-pulse rounded-full bg-petrol-500" />
           </div>
+        </div>
+      ) : null}
+
+      {!isStreaming && !terminal ? (
+        <div className="mt-8 rounded-xl bg-amber-50 p-5 text-sm text-amber-900" role="status">
+          O acompanhamento foi pausado. Consulte o histórico em alguns instantes ou faça uma nova consulta.
+          {onRetry ? <button className="mt-3 block font-semibold text-amber-950 underline" onClick={onRetry} type="button">Fazer nova consulta</button> : null}
         </div>
       ) : null}
 

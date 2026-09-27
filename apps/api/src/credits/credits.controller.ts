@@ -1,7 +1,9 @@
-import { Controller, Get, Inject, Query } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Inject, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { z } from 'zod';
 
 import {
+  ERROR_CODES,
   TransactionDTO,
   type TransactionDTOType,
 } from '@big-eye/contracts';
@@ -16,7 +18,23 @@ function parseLimit(value: string | undefined): number | undefined {
   }
 
   const parsed = Number(value);
-  return Number.isInteger(parsed) ? parsed : Number.NaN;
+  if (!Number.isInteger(parsed) || parsed < 1 || parsed > 100) {
+    throw new BadRequestException({ code: ERROR_CODES.INVALID_INPUT });
+  }
+
+  return parsed;
+}
+
+function parseCursor(value: string | undefined): string | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (!z.string().uuid().safeParse(value).success) {
+    throw new BadRequestException({ code: ERROR_CODES.INVALID_INPUT });
+  }
+
+  return value;
 }
 
 @ApiTags('credits')
@@ -33,7 +51,7 @@ export class CreditsController {
   ): Promise<TransactionDTOType[]> {
     const transactions = await this.creditsService.listTransactions(user.id, {
       limit: parseLimit(limit),
-      cursor,
+      cursor: parseCursor(cursor),
     });
 
     return transactions.map((transaction) =>

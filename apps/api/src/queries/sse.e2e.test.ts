@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 
 import type { PrismaClient } from '@big-eye/core/db/prisma-client';
 import { QueryStatus } from '@big-eye/core/db/prisma-client';
-import { InMemoryQueryEventsBus } from '@big-eye/core/query-events';
+import {
+  InMemoryQueryEventsBus,
+  type QueryEventsBus,
+} from '@big-eye/core/query-events';
 import type { ResultCache } from '@big-eye/core/result-cache';
 
 import type { ApiUser } from '../auth/auth.types.js';
@@ -16,7 +19,10 @@ const user: ApiUser = {
   status: 'active',
 };
 
-function createHarness(initialStatus: QueryStatus) {
+function createHarness(
+  initialStatus: QueryStatus,
+  eventsBus: QueryEventsBus = new InMemoryQueryEventsBus(),
+) {
   const query = {
     id: '00000000-0000-4000-8000-000000000007',
     userId: user.id,
@@ -51,13 +57,11 @@ function createHarness(initialStatus: QueryStatus) {
       },
     },
   } as unknown as PrismaClient;
-  const bus = new InMemoryQueryEventsBus();
-
   return {
     query,
     values,
-    bus,
-    controller: new QueriesSseController(prisma, bus, cache),
+    bus: eventsBus,
+    controller: new QueriesSseController(prisma, eventsBus, cache),
   };
 }
 
@@ -106,5 +110,31 @@ describe('query SSE', () => {
     await expect(collect(stream)).resolves.toEqual([
       { status: QueryStatus.succeeded, resultExpired: true },
     ]);
+  });
+
+  it('cleans up a subscription when the client disconnects during setup', async () => {
+    let activeSubscriptions = 0;
+    let cleanupCalls = 0;
+    const delayedBus: QueryEventsBus = {
+      async publish() {},
+      async subscribe() {
+        activeSubscriptions += 1;
+        await new Promise<void>((resolve) => setImmediate(resolve));
+        return async () => {
+          activeSubscriptions -= 1;
+          cleanupCalls += 1;
+        };
+      },
+    };
+    const harness = createHarness(QueryStatus.running, delayedBus);
+    const stream = await harness.controller.stream(harness.query.id, user);
+    const subscription = stream.subscribe();
+    subscription.unsubscribe();
+
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    await new Promise<void>((resolve) => setImmediate(resolve));
+
+    expect(activeSubscriptions).toBe(0);
+    expect(cleanupCalls).toBe(1);
   });
 });

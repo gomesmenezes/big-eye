@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import type { PackageDTOType, PaymentDTOType } from '@big-eye/contracts';
 
@@ -18,8 +18,14 @@ export function BuyCredits({ packages, onPaymentPaid }: BuyCreditsProps) {
   const [method, setMethod] = useState<PaymentMethod>('pix');
   const [payment, setPayment] = useState<PaymentDTOType>();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPolling, setIsPolling] = useState(false);
   const [error, setError] = useState<string>();
   const [copied, setCopied] = useState(false);
+  const paymentAbort = useRef<AbortController | undefined>(undefined);
+
+  useEffect(() => () => {
+    paymentAbort.current?.abort();
+  }, []);
 
   useEffect(() => {
     if (!selectedPackageId && packages[0]) {
@@ -36,33 +42,81 @@ export function BuyCredits({ packages, onPaymentPaid }: BuyCreditsProps) {
     setError(undefined);
     setPayment(undefined);
     setIsSubmitting(true);
+    paymentAbort.current?.abort();
+    const controller = new AbortController();
+    paymentAbort.current = controller;
 
     try {
       const created = await apiFetch<PaymentDTOType>('/payments', {
         method: 'POST',
+        signal: controller.signal,
         body: JSON.stringify({ packageId: selectedPackageId, method }),
       });
+      if (controller.signal.aborted) {
+        return;
+      }
       setPayment(created);
 
-      if (method === 'card' && created.checkoutUrl) {
+      if (method === 'card') {
+        if (!created.checkoutUrl) {
+          throw new Error('O checkout do cartão não está disponível no momento.');
+        }
         window.location.assign(created.checkoutUrl);
         return;
       }
 
       if (created.status === 'pending') {
-        await pollPayment(created.id);
+        await pollPayment(created.id, controller.signal);
       }
     } catch (caughtError) {
-      setError(paymentErrorMessage(caughtError));
+      if (!controller.signal.aborted) {
+        setError(paymentErrorMessage(caughtError));
+      }
     } finally {
-      setIsSubmitting(false);
+      if (paymentAbort.current === controller) {
+        paymentAbort.current = undefined;
+        setIsPolling(false);
+        setIsSubmitting(false);
+      }
     }
   }
 
-  async function pollPayment(paymentId: string): Promise<void> {
+  async function resumePayment(): Promise<void> {
+    if (!payment || payment.status !== 'pending' || isPolling) {
+      return;
+    }
+
+    setError(undefined);
+    setIsSubmitting(true);
+    const controller = new AbortController();
+    paymentAbort.current?.abort();
+    paymentAbort.current = controller;
+
+    try {
+      await pollPayment(payment.id, controller.signal);
+    } catch (caughtError) {
+      if (!controller.signal.aborted) {
+        setError(paymentErrorMessage(caughtError));
+      }
+    } finally {
+      if (paymentAbort.current === controller) {
+        paymentAbort.current = undefined;
+        setIsPolling(false);
+        setIsSubmitting(false);
+      }
+    }
+  }
+
+  async function pollPayment(paymentId: string, signal: AbortSignal): Promise<void> {
+    setIsPolling(true);
+
     for (let attempt = 0; attempt < 45; attempt += 1) {
-      await wait(2_000);
-      const current = await apiFetch<PaymentDTOType>(`/payments/${paymentId}`);
+      await wait(2_000, signal);
+      if (signal.aborted) {
+        return;
+      }
+
+      const current = await apiFetch<PaymentDTOType>(`/payments/${paymentId}`, { signal });
       setPayment(current);
 
       if (current.status === 'paid') {
@@ -75,7 +129,7 @@ export function BuyCredits({ packages, onPaymentPaid }: BuyCreditsProps) {
       }
     }
 
-    setError('O pagamento ainda está pendente. Você pode deixar esta página aberta para continuar acompanhando.');
+    setError('O acompanhamento foi pausado após 90 segundos. Retome quando quiser para consultar o status novamente.');
   }
 
   async function copyPixCode(): Promise<void> {
@@ -83,9 +137,13 @@ export function BuyCredits({ packages, onPaymentPaid }: BuyCreditsProps) {
       return;
     }
 
-    await navigator.clipboard.writeText(payment.pixQrCode);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 2_000);
+    try {
+      await navigator.clipboard.writeText(payment.pixQrCode);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2_000);
+    } catch {
+      setError('Não foi possível copiar o código Pix. Selecione e copie o código manualmente.');
+    }
   }
 
   return (
@@ -135,7 +193,7 @@ export function BuyCredits({ packages, onPaymentPaid }: BuyCreditsProps) {
 
           <button
             className="mt-6 inline-flex w-full items-center justify-center rounded-lg bg-petrol-600 px-4 py-3 text-sm font-semibold text-white hover:bg-petrol-700 disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={isSubmitting}
+            disabled={isSubmitting || isPolling}
             onClick={() => void startPayment()}
             type="button"
           >
@@ -145,12 +203,32 @@ export function BuyCredits({ packages, onPaymentPaid }: BuyCreditsProps) {
       )}
 
       {error ? <p className="mt-4 rounded-lg bg-red-50 px-3 py-2.5 text-sm text-red-700" role="alert">{error}</p> : null}
-      {payment ? <PaymentStatus copied={copied} onCopy={copyPixCode} payment={payment} /> : null}
+      {payment ? (
+        <PaymentStatus
+          copied={copied}
+          isPolling={isPolling}
+          onCopy={copyPixCode}
+          onResume={resumePayment}
+          payment={payment}
+        />
+      ) : null}
     </section>
   );
 }
 
-function PaymentStatus({ payment, copied, onCopy }: { payment: PaymentDTOType; copied: boolean; onCopy: () => Promise<void> }) {
+function PaymentStatus({
+  payment,
+  copied,
+  isPolling,
+  onCopy,
+  onResume,
+}: {
+  payment: PaymentDTOType;
+  copied: boolean;
+  isPolling: boolean;
+  onCopy: () => Promise<void>;
+  onResume: () => Promise<void>;
+}) {
   const labels: Record<PaymentDTOType['status'], string> = {
     pending: 'Aguardando pagamento',
     paid: 'Pagamento confirmado',
@@ -172,6 +250,11 @@ function PaymentStatus({ payment, copied, onCopy }: { payment: PaymentDTOType; c
           <button className="mt-3 text-sm font-semibold text-petrol-700 hover:text-petrol-800" onClick={() => void onCopy()} type="button">
             {copied ? 'Código copiado' : 'Copiar código Pix'}
           </button>
+          {!isPolling ? (
+            <button className="mt-3 block text-sm font-semibold text-petrol-700 underline hover:text-petrol-800" onClick={() => void onResume()} type="button">
+              Continuar acompanhando
+            </button>
+          ) : null}
         </div>
       ) : null}
       {payment.status === 'paid' ? <p className="mt-3 text-sm text-emerald-700">Seu saldo foi atualizado.</p> : null}
@@ -184,8 +267,27 @@ function formatBRL(cents: number): string {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(cents / 100);
 }
 
-function wait(milliseconds: number): Promise<void> {
-  return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+function wait(milliseconds: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal.aborted) {
+      reject(new DOMException('O acompanhamento foi cancelado.', 'AbortError'));
+      return;
+    }
+
+    const timerState: { id?: number } = {};
+    const onAbort = (): void => {
+      if (timerState.id !== undefined) {
+        window.clearTimeout(timerState.id);
+      }
+      reject(new DOMException('O acompanhamento foi cancelado.', 'AbortError'));
+    };
+    signal.addEventListener('abort', onAbort, { once: true });
+    const timer = window.setTimeout(() => {
+      signal.removeEventListener('abort', onAbort);
+      resolve();
+    }, milliseconds);
+    timerState.id = timer;
+  });
 }
 
 function paymentErrorMessage(error: unknown): string {

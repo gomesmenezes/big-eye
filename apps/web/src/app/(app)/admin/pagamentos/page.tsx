@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from 'react';
 
-import { AdminError, AdminLoading, AdminPage, AdminStatus } from '../../../../components/admin/admin-shell';
+import { AdminError, AdminLoading, AdminPage, AdminStatus, adminErrorMessage } from '../../../../components/admin/admin-shell';
 import {
   formatCurrency,
   formatDate,
@@ -29,12 +29,14 @@ export default function AdminPaymentsPage() {
   const [status, setStatus] = useState('');
   const [userId, setUserId] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [runningId, setRunningId] = useState<string>();
   const [error, setError] = useState<string>();
   const [message, setMessage] = useState<string>();
 
   async function loadPayments(cursor?: string, append = false): Promise<void> {
     setIsLoading(!append);
+    setIsLoadingMore(append);
     setError(undefined);
     const params = new URLSearchParams();
     if (status) params.set('status', status);
@@ -47,10 +49,11 @@ export default function AdminPaymentsPage() {
       const items = readItems<AdminPayment>(response, ['items', 'payments', 'data']).map((item) => normalizePayment(item));
       setPayments((current) => append ? [...current, ...items] : items);
       setNextCursor(readNextCursor(response));
-    } catch {
-      setError('Não foi possível carregar os pagamentos.');
+    } catch (error) {
+      setError(adminErrorMessage(error, 'Não foi possível carregar os pagamentos.'));
     } finally {
       setIsLoading(false);
+      setIsLoadingMore(false);
     }
   }
 
@@ -73,8 +76,8 @@ export default function AdminPaymentsPage() {
       const updated = normalizePayment(response, payment);
       setPayments((current) => current.map((item) => item.id === payment.id ? updated : item));
       setMessage('Pagamento enviado para reprocessamento.');
-    } catch {
-      setError('Não foi possível reprocessar este pagamento.');
+    } catch (error) {
+      setError(adminErrorMessage(error, 'Não foi possível reprocessar este pagamento.'));
     } finally {
       setRunningId(undefined);
     }
@@ -134,7 +137,7 @@ export default function AdminPaymentsPage() {
               </tbody>
             </table>
           </div>
-          {nextCursor ? <div className="border-t border-slate-100 px-5 py-4 text-center"><button className="text-sm font-semibold text-teal-800 hover:text-teal-900" onClick={() => void loadPayments(nextCursor, true)} type="button">Carregar mais</button></div> : null}
+          {nextCursor ? <div className="border-t border-slate-100 px-5 py-4 text-center"><button className="text-sm font-semibold text-teal-800 hover:text-teal-900 disabled:cursor-wait disabled:opacity-60" disabled={isLoadingMore} onClick={() => void loadPayments(nextCursor, true)} type="button">{isLoadingMore ? 'Carregando...' : 'Carregar mais'}</button></div> : null}
           </>
         ) : null}
       </section>

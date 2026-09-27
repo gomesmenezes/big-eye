@@ -72,7 +72,7 @@ export default function CatalogPage() {
   }
 
   if (error) {
-    return <CatalogFrame><p className="rounded-2xl border border-red-100 bg-red-50 p-6 text-sm text-red-800" role="alert">{error}</p></CatalogFrame>;
+    return <CatalogFrame><ErrorPanel message={error} onRetry={() => window.location.reload()} /></CatalogFrame>;
   }
 
   return (
@@ -103,7 +103,7 @@ export default function CatalogPage() {
               </div>
             </div>
             <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {categoryModules.map((module) => <ModuleCard key={module.slug} module={module} hasCredits={(me?.balance ?? 0) > 0} />)}
+              {categoryModules.map((module) => <ModuleCard key={module.slug} module={module} hasCredits={(me?.balance ?? 0) >= module.custoCreditos} />)}
             </div>
           </section>
         ))}
@@ -139,7 +139,7 @@ function ModuleCard({ module, hasCredits }: { module: ModuleDTOType; hasCredits:
           </Link>
         ) : module.implemented ? (
           <Link className="inline-flex w-full items-center justify-center rounded-lg border border-petrol-200 bg-petrol-50 px-3 py-2.5 text-sm font-semibold text-petrol-700 hover:bg-petrol-100" href="/creditos">
-            Assine para acessar
+            Comprar créditos
           </Link>
         ) : (
           <span className="inline-flex w-full items-center justify-center rounded-lg bg-slate-100 px-3 py-2.5 text-sm font-semibold text-slate-500">
@@ -153,4 +153,17 @@ function ModuleCard({ module, hasCredits }: { module: ModuleDTOType; hasCredits:
 
 function CatalogFrame({ children }: Readonly<{ children: React.ReactNode }>) {
   return <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">{children}</div>;
+}
+
+function ErrorPanel({ message, onRetry }: Readonly<{ message: string; onRetry?: () => void }>) {
+  return (
+    <div className="rounded-2xl border border-red-100 bg-red-50 p-6 text-sm text-red-800" role="alert">
+      <p>{message}</p>
+      {onRetry ? (
+        <button className="mt-3 font-semibold underline" onClick={onRetry} type="button">
+          Tentar novamente
+        </button>
+      ) : null}
+    </div>
+  );
 }

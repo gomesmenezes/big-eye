@@ -30,14 +30,52 @@ export function genericErrorMessage(): string {
   return 'Não foi possível concluir a consulta.';
 }
 
-export function errorCodeFor(error: unknown): string {
+export type QueryFailureCode = 'QUERY_FAILED' | 'PROVIDER_UNAVAILABLE';
+
+export type QueryTransitionGuard = {
+  startedAt?: Date | null;
+  providerRequestId?: string | null;
+};
+
+function sameDate(left: Date | null, right: Date | null): boolean {
+  return left?.getTime() === right?.getTime();
+}
+
+function matchesGuard(
+  query: {
+    startedAt: Date | null;
+    providerRequestId: string | null;
+  },
+  guard: QueryTransitionGuard | undefined,
+): boolean {
+  if (!guard) {
+    return true;
+  }
+
+  if ('startedAt' in guard && !sameDate(query.startedAt, guard.startedAt ?? null)) {
+    return false;
+  }
+
+  return !(
+    'providerRequestId' in guard &&
+    query.providerRequestId !== (guard.providerRequestId ?? null)
+  );
+}
+
+export function errorCodeFor(error: unknown): QueryFailureCode {
   if (
     typeof error === 'object' &&
     error !== null &&
     'code' in error &&
     typeof error.code === 'string'
   ) {
-    return error.code;
+    if (error.code === 'PROVIDER_UNAVAILABLE') {
+      return 'PROVIDER_UNAVAILABLE';
+    }
+
+    if (error.code === 'QUERY_FAILED') {
+      return 'QUERY_FAILED';
+    }
   }
 
   return 'QUERY_FAILED';
@@ -131,15 +169,16 @@ export async function finishWithResult(
   dependencies: WorkerDependencies,
   queryId: string,
   data: unknown,
+  guard?: QueryTransitionGuard,
 ): Promise<void> {
   const transitioned = await dependencies.prisma.$transaction(async (tx) => {
     await lockQuery(tx, queryId);
     const query = await tx.query.findUnique({
       where: { id: queryId },
-      select: { status: true },
+      select: { status: true, startedAt: true, providerRequestId: true },
     });
 
-    if (!query || isTerminalStatus(query.status)) {
+    if (!query || isTerminalStatus(query.status) || !matchesGuard(query, guard)) {
       return false;
     }
 
@@ -186,6 +225,7 @@ export async function finishWithFailure(
   dependencies: WorkerDependencies,
   queryId: string,
   error: unknown,
+  guard?: QueryTransitionGuard,
 ): Promise<void> {
   const errorCode = errorCodeFor(error);
 
@@ -197,10 +237,12 @@ export async function finishWithFailure(
         userId: true,
         status: true,
         creditsCharged: true,
+        startedAt: true,
+        providerRequestId: true,
       },
     });
 
-    if (!query || isTerminalStatus(query.status)) {
+    if (!query || isTerminalStatus(query.status) || !matchesGuard(query, guard)) {
       return false;
     }
 

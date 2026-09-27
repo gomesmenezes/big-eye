@@ -170,6 +170,53 @@ describe('QueriesService síncrono', () => {
     }
   });
 
+  it('aborta o provider quando a consulta síncrona excede o timeout', async () => {
+    const userId = await createWallet(1);
+    const previousTimeout = process.env.QUERY_TIMEOUT_MS;
+    let aborted = false;
+    const provider: ProviderClient = {
+      execute: ({ signal }) =>
+        new Promise<ProviderResult>((_resolve, reject) => {
+          if (!signal) {
+            reject(new Error('O provider não recebeu AbortSignal.'));
+            return;
+          }
+
+          signal.addEventListener(
+            'abort',
+            () => {
+              aborted = true;
+              reject(new ProviderError('PROVIDER_UNAVAILABLE'));
+            },
+            { once: true },
+          );
+        }),
+      poll: async () => {
+        throw new ProviderError('PROVIDER_UNAVAILABLE');
+      },
+    };
+    process.env.QUERY_TIMEOUT_MS = '10';
+    const service = new QueriesService(prisma, new CreditsService(prisma), provider);
+
+    try {
+      const result = await service.create(userId, 'cpf-basico', { cpf: '12345678901' });
+
+      expect(result.status).toBe('refunded');
+      expect(result.errorCode).toBe('PROVIDER_UNAVAILABLE');
+      expect(aborted).toBe(true);
+      await expect(prisma.wallet.findUniqueOrThrow({ where: { userId } })).resolves.toMatchObject({
+        balance: 1,
+      });
+    } finally {
+      if (previousTimeout === undefined) {
+        delete process.env.QUERY_TIMEOUT_MS;
+      } else {
+        process.env.QUERY_TIMEOUT_MS = previousTimeout;
+      }
+      await removeUserData(userId);
+    }
+  });
+
   it('marca falha e reembolsa quando o payload sai do schema', async () => {
     const userId = await createWallet(1);
     const service = new QueriesService(

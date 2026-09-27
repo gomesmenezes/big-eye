@@ -8,6 +8,7 @@ import type {
 import {
   InvalidPaymentEventError,
   InvalidPaymentSignatureError,
+  type CheckoutResult,
   type PaymentProvider,
   type ProviderPaymentStatus,
 } from './payment-provider.js';
@@ -123,9 +124,7 @@ export class PaymentsService {
         credits: creditPackage.credits,
       });
 
-      if (checkout.method !== input.method) {
-        throw new Error('Payment provider returned a different payment method.');
-      }
+      validateCheckoutResult(input.method, checkout);
 
       const updatedPayment = await this.prisma.payment.update({
         where: { id: payment.id },
@@ -180,21 +179,18 @@ export class PaymentsService {
     }
 
     return this.prisma.$transaction(async (tx) => {
-      try {
-        await tx.webhookEvent.create({
-          data: {
-            provider: this.providerName,
-            providerEventId: event.providerEventId,
-            payload: event.raw as Prisma.InputJsonValue,
-            signatureValid: true,
-          },
-        });
-      } catch (error) {
-        if (isUniqueConstraintError(error)) {
-          return { duplicate: true };
-        }
+      const insertedEvent = await tx.webhookEvent.createMany({
+        data: {
+          provider: this.providerName,
+          providerEventId: event.providerEventId,
+          payload: event.raw as Prisma.InputJsonValue,
+          signatureValid: true,
+        },
+        skipDuplicates: true,
+      });
 
-        throw error;
+      if (insertedEvent.count === 0) {
+        return { duplicate: true };
       }
 
       const payment = await tx.payment.findFirst({
@@ -310,6 +306,8 @@ export class PaymentsService {
       userId: string;
       credits: number;
       status: PaymentStatus;
+      pixExpiresAt: Date | null;
+      createdAt: Date;
     },
     status: Exclude<ProviderPaymentStatus, 'pending'>,
     paidAt?: Date,
@@ -319,6 +317,14 @@ export class PaymentsService {
     }
 
     if (status === 'paid') {
+      if (hasPaymentExpired(payment, this.clock(), paidAt)) {
+        await tx.payment.update({
+          where: { id: payment.id },
+          data: { status: 'expired' },
+        });
+        return 'expired';
+      }
+
       await this.credits.creditPurchase(tx, {
         userId: payment.userId,
         paymentId: payment.id,
@@ -379,11 +385,42 @@ async function lockPayment(tx: Prisma.TransactionClient, paymentId: string): Pro
   `;
 }
 
-function isUniqueConstraintError(error: unknown): boolean {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    (error as { code?: unknown }).code === 'P2002'
-  );
+function hasPaymentExpired(
+  payment: { pixExpiresAt: Date | null; createdAt: Date },
+  now: Date,
+  paidAt?: Date,
+): boolean {
+  const expiresAt =
+    payment.pixExpiresAt ??
+    new Date(payment.createdAt.getTime() + STALE_PAYMENT_AGE_MS);
+
+  if (now < expiresAt) {
+    return false;
+  }
+
+  return paidAt === undefined || paidAt >= expiresAt;
+}
+
+function validateCheckoutResult(
+  method: PaymentMethod,
+  checkout: CheckoutResult,
+): void {
+  if (
+    typeof checkout.providerPaymentId !== 'string' ||
+    checkout.providerPaymentId.trim().length === 0
+  ) {
+    throw new Error('Payment provider returned an invalid payment id.');
+  }
+
+  if (checkout.method !== method) {
+    throw new Error('Payment provider returned a different payment method.');
+  }
+
+  if (method === 'pix' && (!checkout.pixQrCode || checkout.pixQrCode.trim().length === 0)) {
+    throw new Error('Payment provider did not return a Pix QR code.');
+  }
+
+  if (method === 'card' && (!checkout.checkoutUrl || checkout.checkoutUrl.trim().length === 0)) {
+    throw new Error('Payment provider did not return a card checkout URL.');
+  }
 }

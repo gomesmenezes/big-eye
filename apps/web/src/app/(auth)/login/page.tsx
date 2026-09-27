@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 
+import { getSafeNextPath } from '../../../lib/auth-redirect';
 import { createSupabaseBrowserClient } from '../../../lib/supabase/client';
 
 type AuthMode = 'login' | 'signup';
@@ -44,7 +45,11 @@ export default function LoginPage() {
         return;
       }
 
-      router.replace('/dashboard');
+      const next =
+        typeof window === 'undefined'
+          ? undefined
+          : new URLSearchParams(window.location.search).get('next');
+      router.replace(getSafeNextPath(next));
       router.refresh();
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : 'Não foi possível entrar.');

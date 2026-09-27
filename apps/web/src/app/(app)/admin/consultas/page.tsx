@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from 'react';
 
-import { AdminError, AdminLoading, AdminPage, AdminStatus } from '../../../../components/admin/admin-shell';
+import { AdminError, AdminLoading, AdminPage, AdminStatus, adminErrorMessage } from '../../../../components/admin/admin-shell';
 import {
   formatDate,
   getText,
@@ -32,6 +32,7 @@ export default function AdminQueriesPage() {
   const [moduleSlug, setModuleSlug] = useState('');
   const [userId, setUserId] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [isActionRunning, setIsActionRunning] = useState(false);
   const [error, setError] = useState<string>();
@@ -39,6 +40,7 @@ export default function AdminQueriesPage() {
 
   async function loadQueries(cursor?: string, append = false): Promise<void> {
     setIsLoading(!append);
+    setIsLoadingMore(append);
     setError(undefined);
     const params = new URLSearchParams();
     if (status) params.set('status', status);
@@ -52,10 +54,11 @@ export default function AdminQueriesPage() {
       const items = readItems<AdminQuery>(response, ['items', 'queries', 'data']);
       setQueries((current) => append ? [...current, ...items] : items);
       setNextCursor(readNextCursor(response));
-    } catch {
-      setError('Não foi possível carregar as consultas.');
+    } catch (error) {
+      setError(adminErrorMessage(error, 'Não foi possível carregar as consultas.'));
     } finally {
       setIsLoading(false);
+      setIsLoadingMore(false);
     }
   }
 
@@ -66,8 +69,8 @@ export default function AdminQueriesPage() {
     try {
       const response = await apiFetch<unknown>(`/admin/queries/${id}`);
       setSelected(normalizeQueryDetail(response));
-    } catch {
-      setError('Não foi possível carregar os detalhes desta consulta.');
+    } catch (error) {
+      setError(adminErrorMessage(error, 'Não foi possível carregar os detalhes desta consulta.'));
     } finally {
       setIsDetailLoading(false);
     }
@@ -93,8 +96,8 @@ export default function AdminQueriesPage() {
       setSelected(updated);
       setQueries((current) => current.map((item) => item.id === updated.id ? { ...item, ...updated } : item));
       setMessage(action === 'retry' ? 'Consulta reenfileirada sem novo débito.' : 'Consulta reembolsada.');
-    } catch {
-      setError(action === 'retry' ? 'Não foi possível reenfileirar a consulta.' : 'Não foi possível reembolsar a consulta.');
+    } catch (error) {
+      setError(adminErrorMessage(error, action === 'retry' ? 'Não foi possível reenfileirar a consulta.' : 'Não foi possível reembolsar a consulta.'));
     } finally {
       setIsActionRunning(false);
     }
@@ -157,7 +160,7 @@ export default function AdminQueriesPage() {
                 </tbody>
               </table>
             </div>
-            {nextCursor ? <div className="border-t border-slate-100 px-5 py-4 text-center"><button className="text-sm font-semibold text-teal-800 hover:text-teal-900" onClick={() => void loadQueries(nextCursor, true)} type="button">Carregar mais</button></div> : null}
+            {nextCursor ? <div className="border-t border-slate-100 px-5 py-4 text-center"><button className="text-sm font-semibold text-teal-800 hover:text-teal-900 disabled:cursor-wait disabled:opacity-60" disabled={isLoadingMore} onClick={() => void loadQueries(nextCursor, true)} type="button">{isLoadingMore ? 'Carregando...' : 'Carregar mais'}</button></div> : null}
             </>
           ) : null}
         </section>
@@ -187,8 +190,17 @@ function QueryPanel({
   if (isLoading) return <aside className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><AdminLoading /></aside>;
   if (!query) return <aside className="flex min-h-64 items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">Selecione uma consulta para ver os detalhes.</aside>;
 
-  const canRetry = query.status === 'failed' || query.status === 'refunded';
-  const canRefund = query.status === 'failed' || query.status === 'succeeded' || query.status === 'running' || query.status === 'pending';
+  const currentQuery = query;
+  const canRetry = currentQuery.status === 'failed' || currentQuery.status === 'refunded';
+  const canRefund = currentQuery.status === 'failed' || currentQuery.status === 'succeeded' || currentQuery.status === 'running' || currentQuery.status === 'pending';
+
+  function requestAction(action: 'retry' | 'refund'): void {
+    if (action === 'refund' && !window.confirm(`Reembolsar a consulta ${currentQuery.id}?`)) {
+      return;
+    }
+
+    onAction(action);
+  }
 
   return (
     <aside className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -204,10 +216,10 @@ function QueryPanel({
         <DetailRow label="Idempotency key" value={getText(query.idempotencyKey)} />
       </dl>
 
-      {query.errorMessage ? <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">{query.errorMessage}</p> : null}
+      {query.errorMessage ? <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">{query.errorMessage}</p> : null}
       <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-        {canRetry ? <button className="rounded-lg bg-teal-800 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:opacity-60" disabled={isActionRunning} onClick={() => onAction('retry')} type="button">{isActionRunning ? 'Processando...' : 'Tentar novamente'}</button> : null}
-        {canRefund ? <button className="rounded-lg border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60" disabled={isActionRunning} onClick={() => onAction('refund')} type="button">Reembolsar</button> : null}
+        {canRetry ? <button className="rounded-lg bg-teal-800 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:opacity-60" disabled={isActionRunning} onClick={() => requestAction('retry')} type="button">{isActionRunning ? 'Processando...' : 'Tentar novamente'}</button> : null}
+        {canRefund ? <button className="rounded-lg border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60" disabled={isActionRunning} onClick={() => requestAction('refund')} type="button">Reembolsar</button> : null}
       </div>
 
       <div className="mt-6 border-t border-slate-100 pt-5">

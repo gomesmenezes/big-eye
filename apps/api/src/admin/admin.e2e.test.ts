@@ -7,6 +7,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { CreditsService } from '@big-eye/core/credits/credits.service';
 import { Prisma, PrismaClient } from '@big-eye/core/db/prisma-client';
+import { FakePaymentProvider, getPaymentProvider } from '@big-eye/core/payments';
 
 import { AppModule } from '../app.module.js';
 import { AuthGuard } from '../auth/auth.guard.js';
@@ -48,6 +49,8 @@ describe('admin API', () => {
   const userId = randomUUID();
   const queryId = randomUUID();
   const packageId = randomUUID();
+  const paymentId = randomUUID();
+  const providerPaymentId = `admin-payment-${paymentId}`;
   const queue: AdminQueryQueue = {
     add: vi.fn().mockResolvedValue(undefined),
   };
@@ -83,6 +86,24 @@ describe('admin API', () => {
         active: true,
       },
     });
+    await prisma.payment.create({
+      data: {
+        id: paymentId,
+        userId,
+        provider: 'fake',
+        providerPaymentId,
+        method: 'pix',
+        amountCents: 1_000,
+        credits: 10,
+        status: 'pending',
+        pixExpiresAt: new Date(Date.now() - 60_000),
+      },
+    });
+    const paymentProvider = getPaymentProvider();
+    if (!(paymentProvider instanceof FakePaymentProvider)) {
+      throw new Error('Admin payment test requires the fake payment provider.');
+    }
+    paymentProvider.setStatus(providerPaymentId, 'paid');
     await prisma.query.create({
       data: {
         id: queryId,
@@ -142,6 +163,7 @@ describe('admin API', () => {
     await app?.close();
     await prisma.queryEvent.deleteMany({ where: { queryId } });
     await prisma.creditTransaction.deleteMany({ where: { userId } });
+    await prisma.payment.deleteMany({ where: { id: paymentId } });
     await prisma.query.deleteMany({ where: { id: queryId } });
     await prisma.adminAuditLog.deleteMany({ where: { OR: [{ adminUserId: adminId }, { targetUserId: userId }] } });
     await prisma.wallet.deleteMany({ where: { userId } });
@@ -268,6 +290,13 @@ describe('admin API', () => {
     expect(listed.statusCode).toBe(200);
     expect(listed.json().items).toEqual(expect.arrayContaining([expect.objectContaining({ id: packageId })]));
 
+    const rejected = await request('POST', '/admin/packages', 'admin', {
+      slug: `admin-free-${randomUUID()}`,
+      credits: 5,
+      priceCents: 0,
+    });
+    expect(rejected.statusCode).toBe(400);
+
     const created = await request('POST', '/admin/packages', 'admin', {
       slug: `admin-created-${randomUUID()}`,
       credits: 5,
@@ -276,5 +305,47 @@ describe('admin API', () => {
     expect(created.statusCode).toBe(201);
     const createdId = created.json().id as string;
     await prisma.creditPackage.delete({ where: { id: createdId } });
+  });
+
+  it('does not credit an expired Pix payment during admin reprocessing', async () => {
+    const before = await prisma.wallet.findUniqueOrThrow({ where: { userId } });
+
+    const response = await request('POST', `/admin/payments/${paymentId}/reprocess`);
+
+    expect(response.statusCode).toBe(201);
+    expect(response.json()).toMatchObject({ id: paymentId, status: 'expired' });
+    await expect(
+      prisma.payment.findUniqueOrThrow({ where: { id: paymentId } }),
+    ).resolves.toMatchObject({ status: 'expired', paidAt: null });
+    await expect(
+      prisma.wallet.findUniqueOrThrow({ where: { userId } }),
+    ).resolves.toMatchObject({ balance: before.balance });
+    await expect(
+      prisma.creditTransaction.count({ where: { refType: 'payment', refId: paymentId } }),
+    ).resolves.toBe(0);
+  });
+
+  it('credits concurrent admin reprocessing only once', async () => {
+    await prisma.payment.update({
+      where: { id: paymentId },
+      data: {
+        status: 'pending',
+        pixExpiresAt: new Date(Date.now() + 60_000),
+        paidAt: null,
+      },
+    });
+
+    const [first, second] = await Promise.all([
+      request('POST', `/admin/payments/${paymentId}/reprocess`),
+      request('POST', `/admin/payments/${paymentId}/reprocess`),
+    ]);
+
+    expect(first.statusCode).toBe(201);
+    expect(second.statusCode).toBe(201);
+    expect(first.json()).toMatchObject({ id: paymentId, status: 'paid' });
+    expect(second.json()).toMatchObject({ id: paymentId, status: 'paid' });
+    await expect(
+      prisma.creditTransaction.count({ where: { refType: 'payment', refId: paymentId } }),
+    ).resolves.toBe(1);
   });
 });

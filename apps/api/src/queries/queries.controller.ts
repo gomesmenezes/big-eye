@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Inject,
   Param,
+  ParseUUIDPipe,
   Post,
   Query,
   Body,
@@ -14,6 +15,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { createZodDto, ZodSerializerDto } from 'nestjs-zod';
+import { z } from 'zod';
 
 import {
   CreateQueryBody,
@@ -88,6 +90,18 @@ function parseLimit(value: string | undefined): number | undefined {
   return Number.isInteger(parsed) ? parsed : Number.NaN;
 }
 
+function parseCursor(value: string | undefined): string | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (!z.string().uuid().safeParse(value).success) {
+    throw new BadRequestException({ code: ERROR_CODES.INVALID_INPUT });
+  }
+
+  return value;
+}
+
 @ApiTags('queries')
 @ApiBearerAuth()
 @Controller()
@@ -126,7 +140,10 @@ export class QueriesController {
     @Query('cursor') cursor: string | undefined,
   ): Promise<QueryView[]> {
     try {
-      return await this.queriesService.list(user.id, { limit: parseLimit(limit), cursor });
+      return await this.queriesService.list(user.id, {
+        limit: parseLimit(limit),
+        cursor: parseCursor(cursor),
+      });
     } catch (error) {
       return queryErrorResponse(error);
     }
@@ -135,7 +152,10 @@ export class QueriesController {
   @Get('queries/:id')
   @ApiOkResponse({ type: QueryResponseDto })
   @ZodSerializerDto(QueryResponseDto)
-  async get(@CurrentUser() user: ApiUser, @Param('id') id: string): Promise<QueryView> {
+  async get(
+    @CurrentUser() user: ApiUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<QueryView> {
     try {
       return await this.queriesService.get(user.id, id);
     } catch (error) {

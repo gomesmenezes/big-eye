@@ -15,7 +15,11 @@ type Field = {
   label: string;
   hint: string;
   inputMode?: 'numeric' | 'text';
+  pattern?: string;
   maxLength?: number;
+  minLength?: number;
+  normalize?: (value: string) => string;
+  validate?: (value: string) => string | undefined;
 };
 
 export function QueryForm({ module, disabled = false, onSubmit }: QueryFormProps) {
@@ -44,6 +48,12 @@ export function QueryForm({ module, disabled = false, onSubmit }: QueryFormProps
       return;
     }
 
+    const invalidField = fields.find((field) => field.validate?.(input[field.name] ?? ''));
+    if (invalidField) {
+      setError(invalidField.validate?.(input[invalidField.name] ?? '') ?? 'Confira os dados informados.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -56,7 +66,11 @@ export function QueryForm({ module, disabled = false, onSubmit }: QueryFormProps
   }
 
   return (
-    <form className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm" onSubmit={(event) => void submit(event)}>
+    <form
+      aria-busy={disabled || isSubmitting}
+      className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+      onSubmit={(event) => void submit(event)}
+    >
       <div className="mb-6">
         <h2 className="text-lg font-semibold text-slate-950">Dados da consulta</h2>
         <p className="mt-1 text-sm text-slate-500">Preencha os campos abaixo para consumir {module.custoCreditos} crédito{module.custoCreditos === 1 ? '' : 's'}.</p>
@@ -67,18 +81,24 @@ export function QueryForm({ module, disabled = false, onSubmit }: QueryFormProps
           <label className="block text-sm font-medium text-slate-700" htmlFor={`query-${field.name}`} key={field.name}>
             {field.label}
             <input
+              aria-describedby={`query-${field.name}-hint`}
               autoComplete="off"
               className={`mt-1 w-full rounded-lg border border-slate-300 px-3 py-3 text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-petrol-500 focus:ring-2 focus:ring-petrol-100 disabled:bg-slate-100 ${field.name === 'cpf' ? 'font-mono tracking-wide' : ''}`}
               disabled={disabled || isSubmitting}
               id={`query-${field.name}`}
               inputMode={field.inputMode}
               maxLength={field.maxLength}
-              onChange={(event) => updateValue(field.name, event.target.value)}
+              minLength={field.minLength}
+              onChange={(event) => updateValue(field.name, field.normalize?.(event.target.value) ?? event.target.value)}
+              pattern={field.pattern}
               placeholder={field.hint}
               required
               type="text"
               value={values[field.name] ?? ''}
             />
+            <span className="mt-1 block text-xs font-normal text-slate-500" id={`query-${field.name}-hint`}>
+              {field.hint}
+            </span>
           </label>
         ))}
       </div>
@@ -103,6 +123,10 @@ function fieldsForModule(module: ModuleDTOType): Field[] {
       hint: 'Digite 11 números, sem pontuação',
       inputMode: 'numeric',
       maxLength: 11,
+      minLength: 11,
+      normalize: (value) => value.replace(/\D/gu, '').slice(0, 11),
+      pattern: '\\d{11}',
+      validate: (value) => /^\d{11}$/u.test(value) ? undefined : 'Informe um CPF com 11 números.',
     }];
   }
 

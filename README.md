@@ -68,4 +68,4 @@ As variáveis completas, o procedimento de migração, os webhooks e as resposta
 
 ## Segurança operacional
 
-Não coloque `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL`, `DIRECT_URL`, `REDIS_URL` ou `FAKE_PAYMENT_SECRET` em código, no web ou em logs. Inputs de consulta são mascarados e armazenados apenas como metadados; o payload do resultado fica no cache com TTL.
+Não coloque `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL`, `DIRECT_URL`, `REDIS_URL` ou `FAKE_PAYMENT_SECRET` em código, no web ou em logs. Inputs de consulta são mascarados para os metadados; o input validado fica somente de forma transitória no banco enquanto a consulta pode precisar ser executada ou reenfileirada, e o payload do resultado fica no cache com TTL.

@@ -101,7 +101,7 @@ Ao investigar um pagamento:
 
 ## Consultas e filas
 
-Consultas `sync` terminam no request da API. Consultas `async` são enfileiradas no BullMQ, processadas pelo worker e notificadas pelo Redis/SSE. O resultado fica no cache por `RESULT_TTL_SECONDS`; o banco guarda estado e metadados, não o payload.
+Consultas `sync` terminam no request da API. Consultas `async` são enfileiradas no BullMQ, processadas pelo worker e notificadas pelo Redis/SSE. O resultado fica no cache por `RESULT_TTL_SECONDS`; o banco guarda estado e metadados, não o payload do resultado. O input validado é transitório enquanto a consulta pode ser executada ou reenfileirada e é removido ao chegar a um estado terminal; para retry administrativo, uma cópia privada fica no Redis por no máximo 24 horas.
 
 Quando uma consulta fica parada:
 

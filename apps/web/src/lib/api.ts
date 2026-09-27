@@ -8,6 +8,10 @@ import type {
 
 import { createSupabaseBrowserClient } from './supabase/client';
 
+type BrowserSupabaseClient = ReturnType<typeof createSupabaseBrowserClient>;
+
+let refreshPromise: Promise<string | undefined> | undefined;
+
 export type ModuleDTOType = {
   slug: string;
   nome: string;
@@ -45,10 +49,14 @@ export class ApiError extends Error {
 }
 
 export function getApiUrl(path: string): string {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL;
 
-  if (/^https?:\/\//u.test(path)) {
-    return path;
+  if (!baseUrl) {
+    throw new Error('A API pública não está configurada. Defina NEXT_PUBLIC_API_URL.');
+  }
+
+  if (/^(?:[a-z][a-z\d+.-]*:|\/\/)/iu.test(path)) {
+    throw new Error('O caminho da API deve ser relativo ao endpoint configurado.');
   }
 
   return `${baseUrl.replace(/\/$/u, '')}/${path.replace(/^\//u, '')}`;
@@ -57,6 +65,10 @@ export function getApiUrl(path: string): string {
 function buildHeaders(init: RequestInit, accessToken?: string): Headers {
   const headers = new Headers(init.headers);
   headers.set('Accept', 'application/json');
+
+  // apiFetch owns authentication. Never forward a stale or caller supplied
+  // token when the current Supabase session has no access token.
+  headers.delete('Authorization');
 
   if (accessToken) {
     headers.set('Authorization', `Bearer ${accessToken}`);
@@ -86,6 +98,20 @@ async function parseResponse(response: Response): Promise<unknown> {
   return response.text();
 }
 
+function refreshAccessToken(supabase: BrowserSupabaseClient): Promise<string | undefined> {
+  if (!refreshPromise) {
+    refreshPromise = supabase.auth
+      .refreshSession()
+      .then(({ data: { session } }) => session?.access_token)
+      .catch(() => undefined)
+      .finally(() => {
+        refreshPromise = undefined;
+      });
+  }
+
+  return refreshPromise;
+}
+
 /**
  * Call the API with the current Supabase access token. A 401 refreshes the
  * session once and retries the same request with the new token.
@@ -104,12 +130,10 @@ export async function apiFetch<T = unknown>(path: string, init: RequestInit = {}
     });
 
     if (response.status === 401 && !retry) {
-      const {
-        data: { session: refreshedSession },
-      } = await supabase.auth.refreshSession();
+      const refreshedAccessToken = await refreshAccessToken(supabase);
 
-      if (refreshedSession?.access_token) {
-        accessToken = refreshedSession.access_token;
+      if (refreshedAccessToken) {
+        accessToken = refreshedAccessToken;
         return request(true);
       }
     }
@@ -146,12 +170,10 @@ export async function apiFetchStream(path: string, init: RequestInit = {}): Prom
     });
 
     if (response.status === 401 && !retry) {
-      const {
-        data: { session: refreshedSession },
-      } = await supabase.auth.refreshSession();
+      const refreshedAccessToken = await refreshAccessToken(supabase);
 
-      if (refreshedSession?.access_token) {
-        accessToken = refreshedSession.access_token;
+      if (refreshedAccessToken) {
+        accessToken = refreshedAccessToken;
         return request(true);
       }
     }

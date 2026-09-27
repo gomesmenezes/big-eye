@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, type FormEvent } from 'react';
 
-import { AdminError, AdminLoading, AdminPage, AdminStatus } from '../../../../components/admin/admin-shell';
+import { AdminError, AdminLoading, AdminPage, AdminStatus, adminErrorMessage } from '../../../../components/admin/admin-shell';
 import {
   formatDate,
   getBalance,
@@ -25,11 +25,13 @@ export default function AdminUsersPage() {
   const [nextCursor, setNextCursor] = useState<string>();
   const [selected, setSelected] = useState<AdminUserDetail>();
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [error, setError] = useState<string>();
 
   async function loadUsers(query = search, cursor?: string, append = false): Promise<void> {
     setIsLoading(!append);
+    setIsLoadingMore(append);
     setError(undefined);
 
     try {
@@ -41,10 +43,11 @@ export default function AdminUsersPage() {
       const items = readItems<AdminUser>(response, ['items', 'users', 'data']);
       setUsers((current) => append ? [...current, ...items] : items);
       setNextCursor(readNextCursor(response));
-    } catch {
-      setError('Não foi possível carregar os usuários.');
+    } catch (error) {
+      setError(adminErrorMessage(error, 'Não foi possível carregar os usuários.'));
     } finally {
       setIsLoading(false);
+      setIsLoadingMore(false);
     }
   }
 
@@ -56,8 +59,8 @@ export default function AdminUsersPage() {
       const response = await apiFetch<unknown>(`/admin/users/${id}`);
       setSelected(normalizeUserDetail(response));
       router.replace(`/admin/usuarios?id=${encodeURIComponent(id)}`, { scroll: false });
-    } catch {
-      setError('Não foi possível carregar os dados deste usuário.');
+    } catch (error) {
+      setError(adminErrorMessage(error, 'Não foi possível carregar os dados deste usuário.'));
     } finally {
       setIsDetailLoading(false);
     }
@@ -91,7 +94,7 @@ export default function AdminUsersPage() {
           className="min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
           id="user-search"
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="Buscar por email, nome ou ID"
+          placeholder="Buscar por email ou nome"
           value={search}
         />
         <button className="rounded-xl bg-teal-800 px-5 py-3 text-sm font-semibold text-white hover:bg-teal-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700" type="submit">
@@ -139,7 +142,7 @@ export default function AdminUsersPage() {
                 </tbody>
               </table>
             </div>
-            {nextCursor ? <div className="border-t border-slate-100 px-5 py-4 text-center"><button className="text-sm font-semibold text-teal-800 hover:text-teal-900" onClick={() => void loadUsers(search, nextCursor, true)} type="button">Carregar mais</button></div> : null}
+            {nextCursor ? <div className="border-t border-slate-100 px-5 py-4 text-center"><button className="text-sm font-semibold text-teal-800 hover:text-teal-900 disabled:cursor-wait disabled:opacity-60" disabled={isLoadingMore} onClick={() => void loadUsers(search, nextCursor, true)} type="button">{isLoadingMore ? 'Carregando...' : 'Carregar mais'}</button></div> : null}
             </>
           ) : null}
         </section>
@@ -206,7 +209,7 @@ function UserPanel({
       setReason('');
       setMessage('Ajuste registrado no extrato.');
     } catch (error) {
-      setActionError(errorMessage(error, 'Não foi possível ajustar o saldo.'));
+      setActionError(adminErrorMessage(error, 'Não foi possível ajustar o saldo.'));
     } finally {
       setIsSaving(false);
     }
@@ -216,6 +219,11 @@ function UserPanel({
     setMessage(undefined);
     setActionError(undefined);
     const nextStatus = currentUser.status === 'suspended' ? 'active' : 'suspended';
+    const actionLabel = nextStatus === 'active' ? 'reativar' : 'suspender';
+
+    if (!window.confirm(`Deseja ${actionLabel} o usuário ${currentUser.email}?`)) {
+      return;
+    }
 
     setIsSaving(true);
     try {
@@ -226,7 +234,7 @@ function UserPanel({
       onChanged({ ...currentUser, ...normalizeUserDetail(response, currentUser), status: nextStatus });
       setMessage(nextStatus === 'active' ? 'Usuário reativado.' : 'Usuário suspenso.');
     } catch (error) {
-      setActionError(errorMessage(error, 'Não foi possível atualizar o status.'));
+      setActionError(adminErrorMessage(error, 'Não foi possível atualizar o status.'));
     } finally {
       setIsSaving(false);
     }
@@ -331,11 +339,4 @@ function normalizeUserDetail(value: unknown, fallback?: AdminUserDetail): AdminU
     ...(typeof base.balance === 'number' ? { balance: base.balance } : {}),
     transactions: transactions.length > 0 ? transactions : fallback?.transactions ?? [],
   };
-}
-
-function errorMessage(error: unknown, fallback: string): string {
-  if (error instanceof Error && error.message) {
-    return error instanceof Error && 'status' in error ? fallback : error.message;
-  }
-  return fallback;
 }

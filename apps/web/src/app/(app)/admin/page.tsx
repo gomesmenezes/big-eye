@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-import { AdminError, AdminLoading, AdminPage } from '../../../components/admin/admin-shell';
+import { AdminError, AdminLoading, AdminPage, adminErrorMessage } from '../../../components/admin/admin-shell';
 import {
   formatFailureRate,
   getNumber,
@@ -26,9 +26,9 @@ export default function AdminDashboardPage() {
         if (active) {
           setDashboard(normalizeDashboard(response));
         }
-      } catch {
+      } catch (error) {
         if (active) {
-          setError('Não foi possível carregar os indicadores agora.');
+          setError(adminErrorMessage(error, 'Não foi possível carregar os indicadores agora.'));
         }
       } finally {
         if (active) {

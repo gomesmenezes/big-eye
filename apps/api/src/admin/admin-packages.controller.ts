@@ -29,7 +29,7 @@ import { parseLimit, writeAudit } from './admin.utils.js';
 const packageFields = {
   slug: z.string().trim().regex(/^[a-z0-9-]+$/).min(1).max(100),
   credits: z.number().int().min(1),
-  priceCents: z.number().int().min(0),
+  priceCents: z.number().int().min(1),
   currency: z.literal('BRL').default('BRL'),
   active: z.boolean().default(true),
   sort: z.number().int().default(0),

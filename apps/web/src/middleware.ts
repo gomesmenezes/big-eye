@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { getSafeNextPath } from './lib/auth-redirect';
 import { getSupabaseConfig } from './lib/supabase/config';
 
 export async function middleware(request: NextRequest): Promise<NextResponse> {
@@ -29,7 +30,11 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   if (!user) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = '/login';
-    loginUrl.searchParams.set('next', request.nextUrl.pathname);
+    loginUrl.search = '';
+    loginUrl.searchParams.set(
+      'next',
+      getSafeNextPath(`${request.nextUrl.pathname}${request.nextUrl.search}`),
+    );
     return NextResponse.redirect(loginUrl);
   }
 

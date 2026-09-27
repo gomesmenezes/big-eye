@@ -156,7 +156,7 @@ export class QueriesSseController {
 
       const start = async (): Promise<void> => {
         try {
-          unsubscribe = await events.subscribe(id, (event) =>
+          const cleanup = await events.subscribe(id, (event) =>
             emitEvent(event).catch((error: unknown) => {
               if (!disposed) {
                 disposed = true;
@@ -164,6 +164,17 @@ export class QueriesSseController {
               }
             }),
           );
+
+          // The client can disconnect while the Redis subscription is being
+          // established. In that case the Observable teardown ran before the
+          // cleanup callback existed; close the just-created subscription
+          // immediately instead of leaking a listener.
+          unsubscribe = cleanup;
+          if (disposed) {
+            await cleanup();
+            return;
+          }
+
           const current = await snapshot();
           emit(current, isTerminal(current.status as QueryStatus));
         } catch (error) {

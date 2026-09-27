@@ -3,6 +3,7 @@ import type { Job } from 'bullmq';
 import { getModule } from '@big-eye/contracts';
 import { QueryStatus } from '@big-eye/core/db/prisma-client';
 import type { ProviderResult } from '@big-eye/core/provider/provider.client';
+import { lockQuery } from '@big-eye/core/queries/query-lock';
 import type { QueryRunJob } from '@big-eye/core/queues/queues';
 
 import type { WorkerDependencies } from './context.js';
@@ -67,6 +68,7 @@ export class QueryRunProcessor {
         input: true,
         providerRequestId: true,
         attempts: true,
+        startedAt: true,
       },
     });
 
@@ -98,6 +100,7 @@ export class QueryRunProcessor {
       const providerResult = await this.dependencies.provider.execute({
         module: query.moduleSlug,
         input,
+        idempotencyKey: queryId,
       });
 
       if (providerResult.kind === 'accepted') {
@@ -105,14 +108,34 @@ export class QueryRunProcessor {
           this.dependencies.now().getTime() + this.dependencies.initialPollDelayMs,
         );
 
-        await this.dependencies.prisma.$transaction(async (tx) => {
+        const poll = await this.dependencies.prisma.$transaction(async (tx) => {
+          await lockQuery(tx, queryId);
           const current = await tx.query.findUnique({
             where: { id: queryId },
-            select: { status: true },
+            select: {
+              status: true,
+              providerRequestId: true,
+              attempts: true,
+              startedAt: true,
+            },
           });
 
-          if (!current || current.status !== QueryStatus.running) {
-            return;
+          if (
+            !current ||
+            current.status !== QueryStatus.running ||
+            current.startedAt?.getTime() !== query.startedAt?.getTime()
+          ) {
+            return null;
+          }
+
+          // A duplicate run job may have accepted another provider request
+          // while this execution was in flight. Keep the first durable
+          // request id and let its poll job win instead of replacing it.
+          if (current.providerRequestId) {
+            return {
+              requestId: current.providerRequestId,
+              attempt: current.attempts,
+            };
           }
 
           await tx.query.update({
@@ -123,13 +146,19 @@ export class QueryRunProcessor {
               nextPollAt,
             },
           });
+
+          return { requestId: providerResult.requestId, attempt: 0 };
         });
+
+        if (!poll) {
+          return;
+        }
 
         await this.dependencies.pollQueue.add(
           'query:poll',
-          { queryId, requestId: providerResult.requestId, attempt: 0 },
+          { queryId, requestId: poll.requestId, attempt: poll.attempt },
           {
-            jobId: `${queryId}:poll:0`,
+            jobId: `${queryId}:poll:${poll.attempt}`,
             delay: this.dependencies.initialPollDelayMs,
           },
         );
@@ -137,16 +166,22 @@ export class QueryRunProcessor {
       }
 
       const data = assertResult(query.moduleSlug, providerResult);
-      await finishWithResult(this.dependencies, queryId, data);
+      await finishWithResult(this.dependencies, queryId, data, {
+        startedAt: query.startedAt,
+      });
     } catch (error) {
       // Keep the stable error code available to logs/tests while never putting
       // provider details in the API-facing error message.
       if (errorCodeFor(error) === 'QUERY_FAILED') {
-        await finishWithFailure(this.dependencies, queryId, error);
+        await finishWithFailure(this.dependencies, queryId, error, {
+          startedAt: query.startedAt,
+        });
         return;
       }
 
-      await finishWithFailure(this.dependencies, queryId, error);
+      await finishWithFailure(this.dependencies, queryId, error, {
+        startedAt: query.startedAt,
+      });
     }
   }
 }

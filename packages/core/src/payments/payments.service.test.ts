@@ -6,7 +6,7 @@ import { CreditsService } from '../credits/credits.service.js';
 import { PrismaClient } from '../db/prisma-client.js';
 
 import { FakePaymentProvider } from './fake.provider.js';
-import { InvalidPaymentSignatureError } from './payment-provider.js';
+import { InvalidPaymentSignatureError, type PaymentProvider } from './payment-provider.js';
 import { PaymentsService } from './payments.service.js';
 
 const localDatabaseUrl =
@@ -113,6 +113,38 @@ describe('PaymentsService', () => {
     }
   });
 
+  it('marks a checkout failed when the provider omits the method-specific payload', async () => {
+    const fixture = await createFixture();
+    const malformedProvider: PaymentProvider = {
+      name: 'fake',
+      async createCheckout() {
+        return { providerPaymentId: '', method: 'pix' };
+      },
+      parseWebhook: provider.parseWebhook.bind(provider),
+      getStatus: provider.getStatus.bind(provider),
+    };
+    const malformedPayments = new PaymentsService(
+      prisma,
+      malformedProvider,
+      credits,
+      () => now,
+    );
+
+    try {
+      await expect(
+        malformedPayments.createCheckout(fixture.userId, {
+          packageId: fixture.packageId,
+          method: 'pix',
+        }),
+      ).rejects.toThrow('invalid payment id');
+      await expect(
+        prisma.payment.findFirstOrThrow({ where: { userId: fixture.userId } }),
+      ).resolves.toMatchObject({ status: 'failed', providerPaymentId: null });
+    } finally {
+      await removeFixture(fixture.userId, fixture.packageId);
+    }
+  });
+
   it('credits paid webhooks once and treats a repeated event as a no-op', async () => {
     const fixture = await createFixture();
 
@@ -136,15 +168,20 @@ describe('PaymentsService', () => {
         status: 'paid',
         paidAt: now.toISOString(),
       });
-      const first = await payments.handleWebhook(webhook.body, {
-        'x-fake-signature': webhook.signature,
-      });
-      const second = await payments.handleWebhook(webhook.body, {
-        'x-fake-signature': webhook.signature,
-      });
+      const [first, second] = await Promise.all([
+        payments.handleWebhook(webhook.body, {
+          'x-fake-signature': webhook.signature,
+        }),
+        payments.handleWebhook(webhook.body, {
+          'x-fake-signature': webhook.signature,
+        }),
+      ]);
 
-      expect(first).toMatchObject({ duplicate: false, paymentId: payment.id, status: 'paid' });
-      expect(second).toEqual({ duplicate: true });
+      expect([first.duplicate, second.duplicate].sort()).toEqual([false, true]);
+      expect([first, second]).toContainEqual(
+        expect.objectContaining({ duplicate: false, paymentId: payment.id, status: 'paid' }),
+      );
+      expect([first, second]).toContainEqual({ duplicate: true });
       await expect(credits.getBalance(fixture.userId)).resolves.toBe(5);
       await expect(
         prisma.creditTransaction.count({
@@ -212,7 +249,7 @@ describe('PaymentsService', () => {
 
       await prisma.payment.update({
         where: { id: payment.id },
-        data: { status: 'expired' },
+        data: { pixExpiresAt: new Date(now.getTime() - 1_000) },
       });
       const webhook = provider.createWebhook({
         providerEventId: randomUUID(),
@@ -261,6 +298,41 @@ describe('PaymentsService', () => {
       await expect(
         prisma.payment.findUniqueOrThrow({ where: { id: payment.id } }),
       ).resolves.toMatchObject({ status: 'paid' });
+    } finally {
+      await removeFixture(fixture.userId, fixture.packageId);
+    }
+  });
+
+  it('does not credit a provider paid status discovered after a pending Pix expired', async () => {
+    const fixture = await createFixture();
+
+    try {
+      const payment = await payments.createCheckout(fixture.userId, {
+        packageId: fixture.packageId,
+        method: 'pix',
+      });
+      const providerPaymentId = (
+        await prisma.payment.findUniqueOrThrow({ where: { id: payment.id } })
+      ).providerPaymentId;
+
+      if (!providerPaymentId) {
+        throw new Error('Fake checkout did not return a provider payment id.');
+      }
+
+      await prisma.payment.update({
+        where: { id: payment.id },
+        data: {
+          createdAt: new Date(now.getTime() - 10 * 60 * 1000),
+          pixExpiresAt: new Date(now.getTime() - 1_000),
+        },
+      });
+      provider.setStatus(providerPaymentId, 'paid');
+
+      await expect(payments.reconcilePending()).resolves.toBe(1);
+      await expect(credits.getBalance(fixture.userId)).resolves.toBe(0);
+      await expect(
+        prisma.payment.findUniqueOrThrow({ where: { id: payment.id } }),
+      ).resolves.toMatchObject({ status: 'expired' });
     } finally {
       await removeFixture(fixture.userId, fixture.packageId);
     }

@@ -29,6 +29,7 @@ import { PRISMA } from '../db/database.module.js';
 import { isoDate, parseLimit, writeAudit } from './admin.utils.js';
 
 const paymentStatus = z.enum(['pending', 'paid', 'failed', 'expired', 'refunded']);
+const STALE_PAYMENT_AGE_MS = 24 * 60 * 60 * 1000;
 
 @ApiTags('admin/payments')
 @ApiBearerAuth()
@@ -154,6 +155,8 @@ export class AdminPaymentsController {
           credits: true,
           status: true,
           providerPaymentId: true,
+          pixExpiresAt: true,
+          createdAt: true,
         },
       });
 
@@ -162,7 +165,10 @@ export class AdminPaymentsController {
       }
 
       if (current.status === 'pending' && providerStatus !== 'pending') {
-        if (providerStatus === 'paid') {
+        const expired =
+          providerStatus === 'paid' && hasPaymentExpired(current, new Date());
+
+        if (providerStatus === 'paid' && !expired) {
           await this.credits.creditPurchase(tx, {
             userId: current.userId,
             paymentId: current.id,
@@ -170,11 +176,12 @@ export class AdminPaymentsController {
           });
         }
 
+        const nextStatus = expired ? 'expired' : providerStatus;
         await tx.payment.update({
           where: { id: current.id },
           data: {
-            status: providerStatus,
-            ...(providerStatus === 'paid' ? { paidAt: new Date() } : {}),
+            status: nextStatus,
+            ...(nextStatus === 'paid' ? { paidAt: new Date() } : {}),
           },
         });
       }
@@ -199,6 +206,17 @@ export class AdminPaymentsController {
 
     return toPaymentView(result);
   }
+}
+
+function hasPaymentExpired(
+  payment: { pixExpiresAt: Date | null; createdAt: Date },
+  now: Date,
+): boolean {
+  const expiresAt =
+    payment.pixExpiresAt ??
+    new Date(payment.createdAt.getTime() + STALE_PAYMENT_AGE_MS);
+
+  return now >= expiresAt;
 }
 
 const paymentSelect = {

@@ -277,6 +277,7 @@ export class QueriesService {
         const providerResult = await this.executeWithTimeout({
           module: contract.slug,
           input: validatedInput,
+          idempotencyKey: query.id,
         });
         const data = this.validateResult(contract.output, providerResult);
         const completion = await this.client.$transaction(async (tx) => {
@@ -439,21 +440,28 @@ export class QueriesService {
   private async executeWithTimeout(request: {
     module: string;
     input: Record<string, unknown>;
+    idempotencyKey: string;
   }): Promise<ProviderResult> {
-    let timeout: ReturnType<typeof setTimeout> | undefined;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs());
+    let onAbort: (() => void) | undefined;
     const timeoutPromise = new Promise<never>((_, reject) => {
-      timeout = setTimeout(
-        () => reject(new ProviderError('PROVIDER_UNAVAILABLE', 'O tempo do provedor expirou.')),
-        timeoutMs(),
-      );
+      onAbort = () =>
+        reject(new ProviderError('PROVIDER_UNAVAILABLE', 'O tempo do provedor expirou.'));
+      controller.signal.addEventListener('abort', onAbort, { once: true });
     });
 
     try {
-      return await Promise.race([this.provider.execute(request), timeoutPromise]);
+      return await Promise.race([
+        this.provider.execute({ ...request, signal: controller.signal }),
+        timeoutPromise,
+      ]);
     } finally {
-      if (timeout) {
-        clearTimeout(timeout);
+      clearTimeout(timeout);
+      if (onAbort) {
+        controller.signal.removeEventListener('abort', onAbort);
       }
+      controller.abort();
     }
   }
 

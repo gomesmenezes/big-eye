@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from 'react';
 
-import { AdminError, AdminLoading, AdminPage, AdminStatus } from '../../../../components/admin/admin-shell';
+import { AdminError, AdminLoading, AdminPage, AdminStatus, adminErrorMessage } from '../../../../components/admin/admin-shell';
 import {
   formatCurrency,
   getText,
@@ -35,23 +35,28 @@ export default function AdminPackagesPage() {
   const [editing, setEditing] = useState<AdminPackage>();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [runningId, setRunningId] = useState<string>();
   const [error, setError] = useState<string>();
   const [message, setMessage] = useState<string>();
 
   async function loadPackages(cursor?: string, append = false): Promise<void> {
     setIsLoading(!append);
+    setIsLoadingMore(append);
     setError(undefined);
     try {
-      const suffix = cursor ? `?cursor=${encodeURIComponent(cursor)}` : '';
+      const params = new URLSearchParams({ includeInactive: 'true' });
+      if (cursor) params.set('cursor', cursor);
+      const suffix = `?${params.toString()}`;
       const response = await apiFetch<unknown>(`/admin/packages${suffix}`);
       const items = readItems<AdminPackage>(response, ['items', 'packages', 'data']).map((item) => normalizePackage(item));
       setPackages((current) => append ? [...current, ...items] : items);
       setNextCursor(readNextCursor(response));
-    } catch {
-      setError('Não foi possível carregar os pacotes.');
+    } catch (error) {
+      setError(adminErrorMessage(error, 'Não foi possível carregar os pacotes.'));
     } finally {
       setIsLoading(false);
+      setIsLoadingMore(false);
     }
   }
 
@@ -102,15 +107,16 @@ export default function AdminPackagesPage() {
       setEditing(undefined);
       setIsFormOpen(false);
       setMessage(editing ? 'Pacote atualizado. O novo preço já está disponível no catálogo.' : 'Pacote criado.');
-    } catch {
-      setError('Não foi possível salvar este pacote.');
+    } catch (error) {
+      setError(adminErrorMessage(error, 'Não foi possível salvar este pacote.'));
     } finally {
       setRunningId(undefined);
     }
   }
 
-  async function removePackage(creditPackage: AdminPackage): Promise<void> {
-    if (!window.confirm(`Desativar o pacote ${creditPackage.slug}?`)) {
+  async function togglePackage(creditPackage: AdminPackage): Promise<void> {
+    const nextActive = creditPackage.active === false;
+    if (!window.confirm(`${nextActive ? 'Ativar' : 'Desativar'} o pacote ${creditPackage.slug}?`)) {
       return;
     }
 
@@ -118,11 +124,14 @@ export default function AdminPackagesPage() {
     setError(undefined);
     setMessage(undefined);
     try {
-      await apiFetch<unknown>(`/admin/packages/${creditPackage.id}`, { method: 'DELETE' });
-      setPackages((current) => current.filter((item) => item.id !== creditPackage.id));
-      setMessage('Pacote removido do catálogo.');
-    } catch {
-      setError('Não foi possível remover este pacote.');
+      const response = await apiFetch<unknown>(`/admin/packages/${creditPackage.id}`, nextActive
+        ? { method: 'PATCH', body: JSON.stringify({ active: true }) }
+        : { method: 'DELETE' });
+      const updated = normalizePackage(response, { ...creditPackage, active: nextActive });
+      setPackages((current) => current.map((item) => item.id === creditPackage.id ? updated : item));
+      setMessage(nextActive ? 'Pacote ativado.' : 'Pacote desativado.');
+    } catch (error) {
+      setError(adminErrorMessage(error, 'Não foi possível atualizar este pacote.'));
     } finally {
       setRunningId(undefined);
     }
@@ -136,7 +145,7 @@ export default function AdminPackagesPage() {
     >
       {error ? <div className="mb-5"><AdminError message={error} /></div> : null}
       {message ? <p className="mb-5 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800" role="status">{message}</p> : null}
-      {isFormOpen ? <PackageForm initial={editing} isSaving={runningId === (editing?.id ?? 'new')} onCancel={() => { setIsFormOpen(false); setEditing(undefined); }} onSave={(draft) => void savePackage(draft)} /> : null}
+      {isFormOpen ? <PackageForm initial={editing} isSaving={runningId === (editing?.id ?? 'new')} onCancel={() => { setIsFormOpen(false); setEditing(undefined); }} onSave={(draft) => void savePackage(draft)} key={editing?.id ?? 'new'} /> : null}
 
       <section className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-100 px-5 py-4"><h3 className="font-semibold text-slate-950">Pacotes disponíveis</h3></div>
@@ -162,13 +171,13 @@ export default function AdminPackagesPage() {
                     <td className="px-5 py-4 text-slate-600">{creditPackage.credits}</td>
                     <td className="px-5 py-4 font-semibold text-slate-900">{formatCurrency(creditPackage.priceCents)}</td>
                     <td className="px-5 py-4"><AdminStatus status={creditPackage.active === false ? 'suspended' : 'active'} /></td>
-                    <td className="px-5 py-4 text-right"><div className="flex justify-end gap-3"><button className="text-sm font-semibold text-teal-800 hover:text-teal-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700" onClick={() => beginEdit(creditPackage)} type="button">Editar</button><button className="text-sm font-semibold text-red-700 hover:text-red-800 disabled:opacity-50" disabled={runningId === creditPackage.id} onClick={() => void removePackage(creditPackage)} type="button">Desativar</button></div></td>
+                    <td className="px-5 py-4 text-right"><div className="flex justify-end gap-3"><button className="text-sm font-semibold text-teal-800 hover:text-teal-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700" onClick={() => beginEdit(creditPackage)} type="button">Editar</button><button className="text-sm font-semibold text-red-700 hover:text-red-800 disabled:opacity-50" disabled={runningId === creditPackage.id} onClick={() => void togglePackage(creditPackage)} type="button">{creditPackage.active === false ? 'Ativar' : 'Desativar'}</button></div></td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          {nextCursor ? <div className="border-t border-slate-100 px-5 py-4 text-center"><button className="text-sm font-semibold text-teal-800 hover:text-teal-900" onClick={() => void loadPackages(nextCursor, true)} type="button">Carregar mais</button></div> : null}
+          {nextCursor ? <div className="border-t border-slate-100 px-5 py-4 text-center"><button className="text-sm font-semibold text-teal-800 hover:text-teal-900 disabled:cursor-wait disabled:opacity-60" disabled={isLoadingMore} onClick={() => void loadPackages(nextCursor, true)} type="button">{isLoadingMore ? 'Carregando...' : 'Carregar mais'}</button></div> : null}
           </>
         ) : null}
       </section>
@@ -201,8 +210,8 @@ function PackageForm({
     const credits = Number(draft.credits);
     const priceCents = Number(draft.priceCents);
     const sort = Number(draft.sort);
-    if (!draft.slug.trim() || !Number.isInteger(credits) || credits < 1 || !Number.isInteger(priceCents) || priceCents < 0 || !Number.isInteger(sort)) {
-      setFormError('Preencha slug, créditos, preço em centavos e ordem com valores válidos.');
+    if (!draft.slug.trim() || !Number.isInteger(credits) || credits < 1 || !Number.isInteger(priceCents) || priceCents < 1 || !Number.isInteger(sort)) {
+      setFormError('Preencha slug, créditos, preço positivo em centavos e ordem com valores válidos.');
       return;
     }
     setFormError(undefined);

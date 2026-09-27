@@ -3,6 +3,19 @@ import type { ErrorCode } from '@big-eye/contracts';
 export type ProviderRequest = {
   module: string;
   input: Record<string, unknown>;
+  /**
+   * Stable logical operation key. Adapters should forward it to an upstream
+   * idempotency header or field when the provider supports one. Keeping this
+   * optional preserves compatibility with adapters that do not have that
+   * capability yet; the application cannot infer idempotency from the result
+   * alone.
+   */
+  idempotencyKey?: string;
+  /**
+   * Adapters should stop network work when the API timeout expires. The
+   * field is optional so existing fake and worker adapters remain compatible.
+   */
+  signal?: AbortSignal;
 };
 
 export type ProviderResult =

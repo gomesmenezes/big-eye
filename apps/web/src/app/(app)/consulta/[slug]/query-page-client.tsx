@@ -14,6 +14,9 @@ type QueryPageClientProps = {
 };
 
 const terminalStatuses: QueryDTOType['status'][] = ['succeeded', 'failed', 'refunded'];
+const QUERY_POLL_INTERVAL_MS = 1_500;
+const QUERY_POLL_ATTEMPTS = 40;
+const SSE_RECONNECT_DELAY_MS = 1_000;
 
 export default function QueryPageClient({ slug }: QueryPageClientProps) {
   const [module, setModule] = useState<ModuleDTOType>();
@@ -22,6 +25,7 @@ export default function QueryPageClient({ slug }: QueryPageClientProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isStreaming, setIsStreaming] = useState(false);
   const streamAbort = useRef<AbortController | undefined>(undefined);
+  const pendingIdempotency = useRef<{ fingerprint: string; key: string } | undefined>(undefined);
 
   useEffect(() => {
     let active = true;
@@ -68,17 +72,23 @@ export default function QueryPageClient({ slug }: QueryPageClientProps) {
     setIsStreaming(false);
 
     let created: QueryDTOType;
+    const fingerprint = `${module.slug}:${JSON.stringify(input)}`;
+    const idempotency = pendingIdempotency.current?.fingerprint === fingerprint
+      ? pendingIdempotency.current.key
+      : crypto.randomUUID();
+    pendingIdempotency.current = { fingerprint, key: idempotency };
 
     try {
       created = await apiFetch<QueryDTOType>('/queries', {
         method: 'POST',
-        headers: { 'Idempotency-Key': crypto.randomUUID() },
+        headers: { 'Idempotency-Key': idempotency },
         body: JSON.stringify({ moduleSlug: module.slug, input }),
       });
     } catch (caughtError) {
       throw new Error(errorMessage(caughtError, 'Não foi possível iniciar a consulta.'));
     }
 
+    pendingIdempotency.current = undefined;
     setQuery(created);
 
     if (created.mode === 'async' && !terminalStatuses.includes(created.status)) {
@@ -91,27 +101,54 @@ export default function QueryPageClient({ slug }: QueryPageClientProps) {
     streamAbort.current = controller;
     setIsStreaming(true);
 
-    try {
-      const response = await apiFetchStream(`/queries/${initialQuery.id}/stream`, {
-        signal: controller.signal,
-      });
+    const streamTask = watchSse(initialQuery, controller.signal);
 
-      await consumeSse(response, (payload) => {
-        updateQueryFromEvent(initialQuery, payload);
-      });
+    try {
+      await pollQuery(initialQuery.id, controller.signal);
     } catch (caughtError) {
-      if (controller.signal.aborted) {
-        return;
+      if (!controller.signal.aborted) {
+        setError(errorMessage(caughtError, 'Não foi possível acompanhar o resultado.'));
+      }
+    } finally {
+      controller.abort();
+      await streamTask;
+
+      if (streamAbort.current === controller) {
+        streamAbort.current = undefined;
+        setIsStreaming(false);
+      }
+    }
+  }
+
+  /** Keep SSE as the fast path while polling provides a recovery watchdog. */
+  async function watchSse(initialQuery: QueryDTOType, signal: AbortSignal): Promise<void> {
+    while (!signal.aborted) {
+      let terminalEvent = false;
+
+      try {
+        const response = await apiFetchStream(`/queries/${initialQuery.id}/stream`, { signal });
+
+        await consumeSse(response, (payload) => {
+          const status = queryStatus(payload.status);
+          if (status && terminalStatuses.includes(status)) {
+            terminalEvent = true;
+          }
+          updateQueryFromEvent(initialQuery, payload);
+        });
+
+        if (terminalEvent || signal.aborted) {
+          return;
+        }
+      } catch {
+        if (signal.aborted) {
+          return;
+        }
       }
 
       try {
-        await pollQuery(initialQuery.id, controller.signal);
-      } catch (pollError) {
-        setError(errorMessage(pollError ?? caughtError, 'Não foi possível acompanhar o resultado.'));
-      }
-    } finally {
-      if (!controller.signal.aborted) {
-        setIsStreaming(false);
+        await wait(SSE_RECONNECT_DELAY_MS, signal);
+      } catch {
+        return;
       }
     }
   }
@@ -135,18 +172,19 @@ export default function QueryPageClient({ slug }: QueryPageClientProps) {
   }
 
   async function pollQuery(queryId: string, signal: AbortSignal): Promise<void> {
-    for (let attempt = 0; attempt < 30; attempt += 1) {
+    for (let attempt = 0; attempt < QUERY_POLL_ATTEMPTS; attempt += 1) {
       if (signal.aborted) {
         return;
       }
 
-      await wait(800, signal);
       const current = await apiFetch<QueryDTOType>(`/queries/${queryId}`, { signal });
       setQuery(current);
 
       if (terminalStatuses.includes(current.status)) {
         return;
       }
+
+      await wait(QUERY_POLL_INTERVAL_MS, signal);
     }
 
     throw new Error('O processamento está demorando mais que o esperado. Consulte o histórico em instantes.');
@@ -234,11 +272,27 @@ function queryErrorCode(value: unknown): QueryDTOType['errorCode'] | undefined {
 
 function wait(milliseconds: number, signal: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
-    const timer = window.setTimeout(resolve, milliseconds);
-    signal.addEventListener('abort', () => {
+    let settled = false;
+    const onAbort = (): void => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
       window.clearTimeout(timer);
+      signal.removeEventListener('abort', onAbort);
       reject(new DOMException('A consulta foi cancelada.', 'AbortError'));
-    }, { once: true });
+    };
+    const timer = window.setTimeout(() => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      signal.removeEventListener('abort', onAbort);
+      resolve();
+    }, milliseconds);
+    signal.addEventListener('abort', onAbort, { once: true });
   });
 }
 

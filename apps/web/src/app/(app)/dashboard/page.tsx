@@ -75,7 +75,7 @@ export default function DashboardPage() {
   if (error || !me) {
     return (
       <PageFrame>
-        <ErrorPanel message={error ?? 'Não foi possível carregar seu perfil.'} />
+        <ErrorPanel message={error ?? 'Não foi possível carregar seu perfil.'} onRetry={() => window.location.reload()} />
       </PageFrame>
     );
   }
@@ -200,10 +200,15 @@ function LoadingPanel() {
   );
 }
 
-function ErrorPanel({ message }: Readonly<{ message: string }>) {
+function ErrorPanel({ message, onRetry }: Readonly<{ message: string; onRetry?: () => void }>) {
   return (
     <div className="rounded-2xl border border-red-100 bg-red-50 p-6 text-sm text-red-800" role="alert">
-      {message}
+      <p>{message}</p>
+      {onRetry ? (
+        <button className="mt-3 font-semibold underline" onClick={onRetry} type="button">
+          Tentar novamente
+        </button>
+      ) : null}
     </div>
   );
 }

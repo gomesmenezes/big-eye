@@ -13,7 +13,7 @@ vi.mock('./supabase/client', () => ({
   createSupabaseBrowserClient: () => ({ auth }),
 }));
 
-import { apiFetch } from './api';
+import { apiFetch, consumeSse, getApiUrl } from './api';
 
 describe('apiFetch', () => {
   beforeEach(() => {
@@ -83,5 +83,87 @@ describe('apiFetch', () => {
     await expect(apiFetch('/me')).rejects.toMatchObject({ status: 401 });
     expect(auth.refreshSession).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('compartilha um único refresh entre chamadas concorrentes', async () => {
+    let releaseRefresh: ((value: { data: { session: { access_token: string } } }) => void) | undefined;
+    const refresh = new Promise<{ data: { session: { access_token: string } } }>((resolve) => {
+      releaseRefresh = resolve;
+    });
+    auth.refreshSession.mockReturnValue(refresh);
+
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(null, { status: 401 }))
+      .mockResolvedValueOnce(new Response(null, { status: 401 }))
+      .mockResolvedValue(new Response(JSON.stringify({ id: 'user-id' }), {
+        headers: { 'content-type': 'application/json' },
+        status: 200,
+      }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const first = apiFetch<MeDTOType>('/me');
+    const second = apiFetch<MeDTOType>('/me');
+
+    await vi.waitFor(() => expect(auth.refreshSession).toHaveBeenCalledTimes(1));
+    releaseRefresh?.({ data: { session: { access_token: 'access-token-2' } } });
+    await Promise.all([first, second]);
+
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+  });
+
+  it('não encaminha um Authorization manual sem sessão', async () => {
+    auth.getSession.mockResolvedValue({ data: { session: null } });
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ id: 'user-id' }), {
+        headers: { 'content-type': 'application/json' },
+        status: 200,
+      }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await apiFetch('/me', { headers: { Authorization: 'Bearer stale-token' } });
+
+    const [, requestInit] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(new Headers(requestInit.headers).has('Authorization')).toBe(false);
+  });
+
+  it('exige a URL pública da API e rejeita destinos externos', () => {
+    vi.stubEnv('NEXT_PUBLIC_API_URL', 'https://api.example.test/');
+
+    expect(getApiUrl('/me')).toBe('https://api.example.test/me');
+    expect(() => getApiUrl('https://evil.example.test/me')).toThrow(
+      'O caminho da API deve ser relativo',
+    );
+  });
+
+  it('consome eventos SSE mesmo quando um frame chega em mais de um chunk', async () => {
+    const encoder = new TextEncoder();
+    const chunks = [
+      'data: {"status":"running"}\n\n',
+      'data: {"status":"suc',
+      'ceeded","data":{"ok":true}}\n\n',
+    ];
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        for (const chunk of chunks) {
+          controller.enqueue(encoder.encode(chunk));
+        }
+        controller.close();
+      },
+    });
+    const response = new Response(stream, {
+      headers: { 'content-type': 'text/event-stream' },
+    });
+    const events: Record<string, unknown>[] = [];
+
+    await consumeSse(response, (event) => {
+      events.push(event);
+    });
+
+    expect(events).toEqual([
+      { status: 'running' },
+      { status: 'succeeded', data: { ok: true } },
+    ]);
   });
 });

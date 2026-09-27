@@ -80,7 +80,7 @@ export default function CreditsPage() {
   }
 
   if (error && !me) {
-    return <CreditsFrame><ErrorPanel message={error} /></CreditsFrame>;
+    return <CreditsFrame><ErrorPanel message={error} onRetry={() => window.location.reload()} /></CreditsFrame>;
   }
 
   return (
@@ -149,6 +149,15 @@ function CreditsFrame({ children }: Readonly<{ children: React.ReactNode }>) {
   return <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">{children}</div>;
 }
 
-function ErrorPanel({ message }: Readonly<{ message: string }>) {
-  return <p className="rounded-2xl border border-red-100 bg-red-50 p-6 text-sm text-red-800" role="alert">{message}</p>;
+function ErrorPanel({ message, onRetry }: Readonly<{ message: string; onRetry?: () => void }>) {
+  return (
+    <div className="rounded-2xl border border-red-100 bg-red-50 p-6 text-sm text-red-800" role="alert">
+      <p>{message}</p>
+      {onRetry ? (
+        <button className="mt-3 font-semibold underline" onClick={onRetry} type="button">
+          Tentar novamente
+        </button>
+      ) : null}
+    </div>
+  );
 }

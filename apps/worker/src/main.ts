@@ -56,6 +56,8 @@ async function bootstrap(): Promise<void> {
     },
   );
 
+  console.log('Big Eye worker ready.');
+
   const shutdown = async (): Promise<void> => {
     await Promise.all([runWorker.close(), pollWorker.close(), reconcileWorker.close()]);
     await closeQueues();

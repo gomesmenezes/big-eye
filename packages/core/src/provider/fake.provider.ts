@@ -11,7 +11,13 @@ import {
 
 type PendingRequest = {
   request: ProviderRequest;
+  idempotencyKey?: string;
 };
+
+function idempotencyKey(request: ProviderRequest): string | undefined {
+  const value = request.idempotencyKey?.trim();
+  return value || undefined;
+}
 
 function stableValue(value: unknown): unknown {
   if (Array.isArray(value)) {
@@ -30,8 +36,13 @@ function stableValue(value: unknown): unknown {
 }
 
 function requestFingerprint(request: ProviderRequest): string {
+  const key = idempotencyKey(request);
+  const payload = key
+    ? `${key}:${request.module}:${JSON.stringify(stableValue(request.input))}`
+    : `${request.module}:${JSON.stringify(stableValue(request.input))}`;
+
   return createHash('sha256')
-    .update(`${request.module}:${JSON.stringify(stableValue(request.input))}`)
+    .update(payload)
     .digest('hex')
     .slice(0, 24);
 }
@@ -73,6 +84,8 @@ function buildResult(request: ProviderRequest): unknown {
  */
 export class FakeProvider implements ProviderClient {
   private readonly pending = new Map<string, PendingRequest>();
+  private readonly pendingByIdempotencyKey = new Map<string, string>();
+  private readonly completedByIdempotencyKey = new Map<string, ProviderResult>();
 
   async execute(request: ProviderRequest): Promise<ProviderResult> {
     const contract = getModule(request.module);
@@ -81,15 +94,36 @@ export class FakeProvider implements ProviderClient {
       throw new ProviderError('PROVIDER_UNAVAILABLE', 'Módulo indisponível no provedor.');
     }
 
+    const stableKey = idempotencyKey(request);
+
+    if (stableKey) {
+      const completed = this.completedByIdempotencyKey.get(stableKey);
+      if (completed) {
+        return completed;
+      }
+
+      const existingRequestId = this.pendingByIdempotencyKey.get(stableKey);
+      if (existingRequestId) {
+        return { kind: 'accepted', requestId: existingRequestId };
+      }
+    }
+
     const cpf = readCpf(request);
     const requestId = `fake-${requestFingerprint(request)}`;
 
     if (contract.mode === 'async' && cpf.endsWith('0')) {
-      this.pending.set(requestId, { request });
+      this.pending.set(requestId, { request, idempotencyKey: stableKey });
+      if (stableKey) {
+        this.pendingByIdempotencyKey.set(stableKey, requestId);
+      }
       return { kind: 'accepted', requestId };
     }
 
-    return { kind: 'result', data: buildResult(request) };
+    const result: ProviderResult = { kind: 'result', data: buildResult(request) };
+    if (stableKey) {
+      this.completedByIdempotencyKey.set(stableKey, result);
+    }
+    return result;
   }
 
   async poll(requestId: string): Promise<ProviderResult> {
@@ -100,6 +134,14 @@ export class FakeProvider implements ProviderClient {
     }
 
     this.pending.delete(requestId);
-    return { kind: 'result', data: buildResult(pending.request) };
+    if (pending.idempotencyKey) {
+      this.pendingByIdempotencyKey.delete(pending.idempotencyKey);
+    }
+
+    const result: ProviderResult = { kind: 'result', data: buildResult(pending.request) };
+    if (pending.idempotencyKey) {
+      this.completedByIdempotencyKey.set(pending.idempotencyKey, result);
+    }
+    return result;
   }
 }

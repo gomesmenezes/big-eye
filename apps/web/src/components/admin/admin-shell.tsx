@@ -87,6 +87,29 @@ export function AdminError({ message }: Readonly<{ message: string }>) {
   );
 }
 
+export function adminErrorMessage(error: unknown, fallback: string): string {
+  const status = getErrorStatus(error);
+
+  if (status === 401) {
+    return 'Sua sessão expirou. Entre novamente para continuar.';
+  }
+
+  if (status === 403) {
+    return 'Você não tem permissão para acessar esta área ou executar esta ação.';
+  }
+
+  return fallback;
+}
+
+function getErrorStatus(error: unknown): number | undefined {
+  if (typeof error !== 'object' || error === null || !('status' in error)) {
+    return undefined;
+  }
+
+  const status = (error as { status?: unknown }).status;
+  return typeof status === 'number' ? status : undefined;
+}
+
 export function AdminLoading() {
   return (
     <div className="space-y-4" aria-label="Carregando">
