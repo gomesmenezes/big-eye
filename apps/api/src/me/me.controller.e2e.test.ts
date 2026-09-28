@@ -32,7 +32,7 @@ describe('GET /me', () => {
   let signNonExpiringToken: () => Promise<string>;
 
   const prisma = {
-    profile: { findUnique: vi.fn() },
+    profile: { findUnique: vi.fn(), upsert: vi.fn() },
     $disconnect: vi.fn().mockResolvedValue(undefined),
   } as unknown as PrismaClient;
 
@@ -126,12 +126,35 @@ describe('GET /me', () => {
     expect(nonExpiring.statusCode).toBe(401);
   });
 
-  it('returns 404 when the profile trigger has not created the profile yet', async () => {
+  it('provisions a profile and wallet when the auth trigger has not created them yet', async () => {
     vi.mocked(prisma.profile.findUnique).mockResolvedValue(null);
+    vi.mocked(prisma.profile.upsert).mockResolvedValue({
+      ...profile,
+      name: '',
+      wallet: { balance: 0 },
+    } as never);
 
     const response = await getMe(await signToken('5m'));
 
-    expect(response.statusCode).toBe(404);
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({
+      id: userId,
+      email: profile.email,
+      name: '',
+      role: 'user',
+      balance: 0,
+    });
+    expect(prisma.profile.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: userId },
+        create: expect.objectContaining({
+          id: userId,
+          email: profile.email,
+          wallet: { create: {} },
+        }),
+        update: {},
+      }),
+    );
     vi.mocked(prisma.profile.findUnique).mockResolvedValue(profile as never);
   });
 

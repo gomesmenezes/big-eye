@@ -35,7 +35,16 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       'next',
       getSafeNextPath(`${request.nextUrl.pathname}${request.nextUrl.search}`),
     );
-    return NextResponse.redirect(loginUrl);
+    const redirectResponse = NextResponse.redirect(loginUrl);
+
+    // Supabase can clear an invalid session or rotate refresh cookies while
+    // getUser() runs. Keep those Set-Cookie headers when returning the login
+    // redirect, otherwise the browser keeps retrying with the stale cookie.
+    response.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie);
+    });
+
+    return redirectResponse;
   }
 
   return response;

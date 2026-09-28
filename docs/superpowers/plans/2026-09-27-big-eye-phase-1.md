@@ -162,15 +162,15 @@ git commit -m "feat(core): prisma schema, auth trigger, seed and wallet lock tes
 ## Task 4: `apps/api` — bootstrap, config, auth e guards
 
 **Files:**
-- Create: `apps/api/package.json`, `src/main.ts`, `src/app.module.ts`
+- Create: `apps/api/package.json`, `src/main.ts`, `src/app.module.ts`, `src/app.setup.ts`
 - Create: `src/config/env.ts` (Zod), `src/common/filters/http-exception.filter.ts`, `src/common/logger.ts`
-- Create: `src/auth/jwt-verifier.ts` (JWKS via `jose` + cache), `src/auth/auth.guard.ts`, `src/auth/roles.guard.ts`, `src/auth/public.decorator.ts`, `src/auth/current-user.decorator.ts`
-- Create: `src/me/me.controller.ts`, `src/me/me.service.ts`
-- Test: `src/auth/auth.guard.test.ts`, `src/me/me.controller.e2e.test.ts`
+- Create: `src/auth/auth.module.ts`, `src/auth/auth.tokens.ts`, `src/auth/auth.types.ts`, `src/auth/jwt-verifier.ts` (JWKS via `jose` + cache), `src/auth/auth.guard.ts`, `src/auth/roles.guard.ts`, `src/auth/public.decorator.ts`, `src/auth/current-user.decorator.ts`
+- Create: `src/health/health.controller.ts`, `src/me/me.controller.ts`, `src/me/me.module.ts`, `src/me/me.service.ts`
+- Test: `src/auth/auth.guard.test.ts`, `src/config/env.test.ts`, `src/common/filters/http-exception.filter.test.ts`, `src/me/me.controller.e2e.test.ts`, `test/setup-env.ts`
 
 **Interfaces:**
-- Produces: `AuthGuard` global (valida Bearer via JWKS, anexa `req.user = { id, email, role, status }`); `@Public()`; `@CurrentUser()`; `AdminGuard`; `SuspendedGuard`; `GET /me` → `MeDTO` (`{ id, email, name, role, balance }`).
-- Consumes: `prisma`, `MODULES`, `ERROR_CODES`.
+- Produces: `AuthGuard` global (valida Bearer via JWKS e consulta `profiles`; anexa `req.user = { id, email, role, status }`, com `role/status = null` enquanto o profile ainda não existir); `SuspendedGuard` global, registrado depois do `AuthGuard`; `@Public()` (ignora ambos os guards); `@CurrentUser()`; `AdminGuard` como guard de rota/controller, aplicado com `@UseGuards(AdminGuard)`; `GET /me` → `MeDTO` (`{ id, email, name, role, balance }`).
+- Consumes: `prisma`, `MeDTO` e `ERROR_CODES` de `@big-eye/contracts`.
 
 - [x] **Step 1: Bootstrap** NestJS com `FastifyAdapter`, CORS com allowlist (`WEB_ORIGIN`), `helmet`, `@nestjs/throttler` (global) e Swagger em `/docs` gerado a partir dos DTOs Zod (`nestjs-zod`).
 - [x] **Step 2: Config Zod** (`env.ts`) validando todas as envs no boot; falhar rápido com mensagem clara.
@@ -228,12 +228,12 @@ git commit -m "feat(core): credits ledger service with lock, idempotency and ref
   - Endpoints: `POST /queries` (202/200), `GET /queries`, `GET /queries/:id`, `GET /credits/transactions`, `GET /modules`.
 - Consumes: `CreditsService` (task 5), `MODULES` (task 2).
 
-- [ ] **Step 1: Testes do caminho síncrono.** Casos: sucesso → `succeeded`, débito permanece, `input` apagado, `input_masked`/`hash` preenchidos; provedor lança erro → `failed` + `refunded`; **provedor devolve payload fora do `output` schema → `failed` + `refunded`** (Review Focus #3); saldo insuficiente → 402 e nenhuma `queries` criada; **reuso de `Idempotency-Key` com corpo diferente devolve a consulta original e não debita de novo** (Review Focus #1).
-- [ ] **Step 2:** Rodar e ver falhar.
-- [ ] **Step 3: `FakeProvider`** — determinístico por `module`+`input` (ex.: CPF terminando em `0` → `kind: 'accepted'` para módulos async; CPF inválido → lança `ProviderError('PROVIDER_UNAVAILABLE')`; caso normal → `kind: 'result'` com dados que passam no `output` do catálogo).
-- [ ] **Step 4: `QueriesService.create` (sync)** — numa `prisma.$transaction`: cria `queries` com `input` e metadados, `creditsService.debitForQuery`, chama `provider.execute` com `AbortSignal.timeout(env.QUERY_TIMEOUT_MS)`, valida `output` e finaliza. Em qualquer falha (erro, timeout, shape inválido): `status=failed` + `refundQuery`, `input` apagado. Registrar cada transição em `query_events`.
-- [ ] **Step 5: Controllers** — `POST /queries` valida `input` contra `module.input` (400 `INVALID_INPUT`), resolve `mode`; sync responde inline. `GET /modules` expõe o catálogo sem os schemas internos. `GET /credits/transactions` paginado.
-- [ ] **Step 6:** Testes PASS. Commit:
+- [x] **Step 1: Testes do caminho síncrono.** Casos: sucesso → `succeeded`, débito permanece, `input` apagado, `input_masked`/`hash` preenchidos; provedor lança erro → `failed` + `refunded`; **provedor devolve payload fora do `output` schema → `failed` + `refunded`** (Review Focus #3); saldo insuficiente → 402 e nenhuma `queries` criada; **reuso de `Idempotency-Key` com corpo diferente devolve a consulta original e não debita de novo** (Review Focus #1).
+- [x] **Step 2:** Rodar e ver falhar.
+- [x] **Step 3: `FakeProvider`** — determinístico por `module`+`input` (ex.: CPF terminando em `0` → `kind: 'accepted'` para módulos async; CPF inválido → lança `ProviderError('PROVIDER_UNAVAILABLE')`; caso normal → `kind: 'result'` com dados que passam no `output` do catálogo).
+- [x] **Step 4: `QueriesService.create` (sync)** — numa `prisma.$transaction`: cria `queries` com `input` e metadados, `creditsService.debitForQuery`, chama `provider.execute` com `AbortSignal.timeout(env.QUERY_TIMEOUT_MS)`, valida `output` e finaliza. Em qualquer falha (erro, timeout, shape inválido): `status=failed` + `refundQuery`, `input` apagado. Registrar cada transição em `query_events`.
+- [x] **Step 5: Controllers** — `POST /queries` valida `input` contra `module.input` (400 `INVALID_INPUT`), resolve `mode`; sync responde inline. `GET /modules` expõe o catálogo sem os schemas internos. `GET /credits/transactions` paginado.
+- [x] **Step 6:** Testes PASS. Commit:
 
 ```bash
 git commit -m "feat: provider abstraction and synchronous query engine with refunds"
@@ -259,14 +259,14 @@ git commit -m "feat: provider abstraction and synchronous query engine with refu
   - `GET /queries/:id/stream` (SSE: emite `{ status }` e, ao concluir, `{ status: 'succeeded', data }` lido do cache)
 - Consumes: `QueriesService`, `CreditsService`, `ProviderClient`.
 
-- [ ] **Step 1: Testes.** Casos: async `accepted` → `running`, poll resolve → cache populado + `succeeded`; poll esgota tentativas → `failed` + `refunded`; **SSE entrega status final mesmo se o cliente reconectar** (Review Focus #4); **cache expirado → `GET /queries/:id` responde `succeeded` sem `data` e com `resultExpired: true`** (Review Focus #5); varredura de reconciliação reembolsa consulta presa há > limite.
-- [ ] **Step 2:** Rodar e ver falhar.
-- [ ] **Step 3: Filas** (`queues.ts`, `redis.ts`, `result-cache.ts`) com BullMQ; `query:run` com `removeOnComplete/removeOnFail` limitados; `resultCache` com TTL de `env.RESULT_TTL_SECONDS`.
-- [ ] **Step 4: Processadores** — `query-run`: `pending→running`, `provider.execute`; `accepted` → guarda `providerRequestId`, agenda `query:poll` (delay exponencial com teto). `query-poll`: `provider.poll`; ao resolver, valida `output`, grava no cache, publica no bus, `succeeded`, apaga `input`. Falha final → `failed` + `refund`.
-- [ ] **Step 5: `QueriesService.create` (async)** — cria `pending` + debita + enfileira `query:run`; responde 202 com a consulta.
-- [ ] **Step 6: SSE** no `api` — `@Sse('queries/:id/stream')` que assina o `QueryEventsBus`, envia o status atual imediatamente e encerra ao chegar em estado terminal. Se terminal e cache vazio → envia `resultExpired: true`.
-- [ ] **Step 7: Reconciliação** — job repetível (1 min) marca `failed`+`refunded` consultas presas além do limite e publica no bus.
-- [ ] **Step 8:** Testes PASS. Commit:
+- [x] **Step 1: Testes.** Casos: async `accepted` → `running`, poll resolve → cache populado + `succeeded`; poll esgota tentativas → `failed` + `refunded`; **SSE entrega status final mesmo se o cliente reconectar** (Review Focus #4); **cache expirado → `GET /queries/:id` responde `succeeded` sem `data` e com `resultExpired: true`** (Review Focus #5); varredura de reconciliação reembolsa consulta presa há > limite.
+- [x] **Step 2:** Rodar e ver falhar.
+- [x] **Step 3: Filas** (`queues.ts`, `redis.ts`, `result-cache.ts`) com BullMQ; `query:run` com `removeOnComplete/removeOnFail` limitados; `resultCache` com TTL de `env.RESULT_TTL_SECONDS`.
+- [x] **Step 4: Processadores** — `query-run`: `pending→running`, `provider.execute`; `accepted` → guarda `providerRequestId`, agenda `query:poll` (delay exponencial com teto). `query-poll`: `provider.poll`; ao resolver, valida `output`, grava no cache, publica no bus, `succeeded`, apaga `input`. Falha final → `failed` + `refund`.
+- [x] **Step 5: `QueriesService.create` (async)** — cria `pending` + debita + enfileira `query:run`; responde 202 com a consulta.
+- [x] **Step 6: SSE** no `api` — `@Sse('queries/:id/stream')` que assina o `QueryEventsBus`, envia o status atual imediatamente e encerra ao chegar em estado terminal. Se terminal e cache vazio → envia `resultExpired: true`.
+- [x] **Step 7: Reconciliação** — job repetível (1 min) marca `failed`+`refunded` consultas presas além do limite e publica no bus.
+- [x] **Step 8:** Testes PASS. Commit:
 
 ```bash
 git commit -m "feat(worker): async query engine with polling, sse and reconciliation"
@@ -292,12 +292,12 @@ git commit -m "feat(worker): async query engine with polling, sse and reconcilia
   - Endpoints: `GET /packages`, `POST /payments`, `GET /payments/:id`, `POST /webhooks/payments/:provider` (público).
 - Consumes: `CreditsService`, `prisma`.
 
-- [ ] **Step 1: Testes.** Casos: checkout cria `pending` com `credits` do pacote; webhook `paid` credita via `creditPurchase` e marca `paid`; **webhook repetido (mesmo `providerEventId`) não credita de novo**; **webhook `paid` para pagamento já `expired` não credita** (Review Focus #2); assinatura inválida → 401 e nada persiste; reconciliação crédita pagamento `pending` que o provedor já deu como `paid`.
-- [ ] **Step 2:** Rodar e ver falhar.
-- [ ] **Step 3: `FakePaymentProvider`** — `createCheckout` devolve QR Pix fake e `providerPaymentId`; `parseWebhook` valida um HMAC simples (`x-fake-signature`) com `env.FAKE_PAYMENT_SECRET`; `getStatus` lê de um mapa em memória controlável nos testes.
-- [ ] **Step 4: `PaymentsService`** — `handleWebhook` grava `WebhookEvent` por `providerEventId` (unique → replay vira no-op), valida `signatureValid`, e numa transação marca `paid` + `creditPurchase` apenas se `status === 'pending'`. Publicar `rawBody` no Fastify (`{ rawBody: true }`).
-- [ ] **Step 5: Controllers** — `POST /payments` valida `packageId` ativo; webhook é `@Public()`, lê o corpo cru e responde 200 sempre que o evento for válido/repetido.
-- [ ] **Step 6: Jobs** — `reconcilePending` (5 min) e `expireStale` (1 min). Testes PASS. Commit:
+- [x] **Step 1: Testes.** Casos: checkout cria `pending` com `credits` do pacote; webhook `paid` credita via `creditPurchase` e marca `paid`; **webhook repetido (mesmo `providerEventId`) não credita de novo**; **webhook `paid` para pagamento já `expired` não credita** (Review Focus #2); assinatura inválida → 401 e nada persiste; reconciliação crédita pagamento `pending` que o provedor já deu como `paid`.
+- [x] **Step 2:** Rodar e ver falhar.
+- [x] **Step 3: `FakePaymentProvider`** — `createCheckout` devolve QR Pix fake e `providerPaymentId`; `parseWebhook` valida um HMAC simples (`x-fake-signature`) com `env.FAKE_PAYMENT_SECRET`; `getStatus` lê de um mapa em memória controlável nos testes.
+- [x] **Step 4: `PaymentsService`** — `handleWebhook` grava `WebhookEvent` por `providerEventId` (unique → replay vira no-op), valida `signatureValid`, e numa transação marca `paid` + `creditPurchase` apenas se `status === 'pending'`. Publicar `rawBody` no Fastify (`{ rawBody: true }`).
+- [x] **Step 5: Controllers** — `POST /payments` valida `packageId` ativo; webhook é `@Public()`, lê o corpo cru e responde 200 sempre que o evento for válido/repetido.
+- [x] **Step 6: Jobs** — `reconcilePending` (5 min) e `expireStale` (1 min). Testes PASS. Commit:
 
 ```bash
 git commit -m "feat: abstract payment provider, checkout and idempotent webhooks"
@@ -323,10 +323,10 @@ git commit -m "feat: abstract payment provider, checkout and idempotent webhooks
   - `GET /admin/dashboard` (novos usuários, créditos vendidos/consumidos, consultas por módulo, taxa de falha)
 - Consumes: `AdminGuard` (task 4), `CreditsService`, `QueriesService`, `PaymentsService`.
 
-- [ ] **Step 1: Testes E2E.** Casos: usuário comum recebe 403 em toda rota `/admin/*`; ajuste de wallet grava `admin_adjust` **e** `admin_audit_log`; `retry` **não** cria novo débito e mantém o `idempotency_key` (Review Focus da §10 da spec); `refund` idempotente; `GET /admin/dashboard` calcula os agregados corretos.
-- [ ] **Step 2:** Rodar e ver falhar.
-- [ ] **Step 3:** Implementar controllers sobre os serviços existentes, todos com `@AdminGuard`, paginação por cursor, e `retry` chamando `queryQueue.add` com o mesmo `queryId`.
-- [ ] **Step 4:** Testes PASS. Commit:
+- [x] **Step 1: Testes E2E.** Casos: usuário comum recebe 403 em toda rota `/admin/*`; ajuste de wallet grava `admin_adjust` **e** `admin_audit_log`; `retry` **não** cria novo débito e mantém o `idempotency_key` (Review Focus da §10 da spec); `refund` idempotente; `GET /admin/dashboard` calcula os agregados corretos.
+- [x] **Step 2:** Rodar e ver falhar.
+- [x] **Step 3:** Implementar controllers sobre os serviços existentes, protegendo cada controller/rota com `@UseGuards(AdminGuard)`, paginação por cursor, e `retry` chamando `queryQueue.add` com o mesmo `queryId`.
+- [x] **Step 4:** Testes PASS. Commit:
 
 ```bash
 git commit -m "feat(api): admin endpoints for users, queries, payments, packages and dashboard"
@@ -346,11 +346,11 @@ git commit -m "feat(api): admin endpoints for users, queries, payments, packages
 - Produces: `createSupabaseServerClient()`, `createSupabaseBrowserClient()`, `apiFetch<T>(path, init)` (anexa `Authorization: Bearer` da sessão; tipado pelos DTOs de `@big-eye/contracts`), `Providers` (TanStack Query). `middleware.ts` protege `/(app)` redirecionando para `/login`.
 - Consumes: `contracts` DTOs, API da task 4.
 
-- [ ] **Step 1: Bootstrap** Next.js 15 App Router + Tailwind + shadcn/ui; `@supabase/ssr` configurado por cookies.
-- [ ] **Step 2: Login/registro** com Supabase Auth; após login, obter `access_token` da sessão e usá-lo no `apiFetch`.
-- [ ] **Step 3: `apiFetch` + teste** — teste unitário garante que o header Bearer é anexado e que 401 dispara refresh de sessão uma vez.
-- [ ] **Step 4:** E2E mínimo: visitar `/` deslogado → redireciona `/login`; logar (usuário de teste) → cai no dashboard.
-- [ ] **Step 5:** Commit `feat(web): nextjs bootstrap with supabase auth and typed api client`.
+- [x] **Step 1: Bootstrap** Next.js 15 App Router + Tailwind + shadcn/ui; `@supabase/ssr` configurado por cookies.
+- [x] **Step 2: Login/registro** com Supabase Auth; após login, obter `access_token` da sessão e usá-lo no `apiFetch`.
+- [x] **Step 3: `apiFetch` + teste** — teste unitário garante que o header Bearer é anexado e que 401 dispara refresh de sessão uma vez.
+- [x] **Step 4:** E2E mínimo: visitar `/` deslogado → redireciona `/login`; logar (usuário de teste) → cai no dashboard.
+- [x] **Step 5:** Commit `feat(web): nextjs bootstrap with supabase auth and typed api client`.
 
 ---
 
@@ -365,10 +365,10 @@ git commit -m "feat(api): admin endpoints for users, queries, payments, packages
 **Interfaces:**
 - Consumes: `GET /modules`, `POST /queries`, `GET /queries/:id`, `/queries/:id/stream`, `GET /credits/transactions`, `GET /packages`, `POST /payments`, `GET /payments/:id`.
 
-- [ ] **Step 1: Testes E2E (Playwright, com `FakeProvider`).** Sync: rodar `cpf-basico` → ver resultado → saldo cai 1. Async: rodar `dossie-360` → ver "processando" → resultado chega via SSE → saldo cai 1. Compra: iniciar Pix (`FakePaymentProvider`) → simular webhook `paid` → saldo sobe.
-- [ ] **Step 2:** Rodar e ver falhar.
-- [ ] **Step 3:** Dashboard (saldo + atalhos), catálogo (agrupado por categoria, badge ESPECIAL, "Assine para acessar" para quem tem saldo 0), tela de consulta (form gerado do contrato do módulo; sync mostra resultado inline; async usa `EventSource` e mostra progresso; trata `resultExpired`), extrato paginado e compra de créditos (Pix com QR e polling de status; cartão via redirect).
-- [ ] **Step 4:** Testes PASS. Commit `feat(web): user flows for catalog, queries, credits and purchase`.
+- [x] **Step 1: Testes E2E (Playwright, com `FakeProvider`).** Sync: rodar `cpf-basico` → ver resultado → saldo cai 1. Async: rodar `dossie-360` → ver "processando" → resultado chega via SSE → saldo cai 1. Compra: iniciar Pix (`FakePaymentProvider`) → simular webhook `paid` → saldo sobe.
+- [x] **Step 2:** Rodar e ver falhar.
+- [x] **Step 3:** Dashboard (saldo + atalhos), catálogo (agrupado por categoria, badge ESPECIAL, "Assine para acessar" para quem tem saldo 0), tela de consulta (form gerado do contrato do módulo; sync mostra resultado inline; async usa `EventSource` e mostra progresso; trata `resultExpired`), extrato paginado e compra de créditos (Pix com QR e polling de status; cartão via redirect).
+- [x] **Step 4:** Testes PASS. Commit `feat(web): user flows for catalog, queries, credits and purchase`.
 
 ---
 
@@ -381,9 +381,9 @@ git commit -m "feat(api): admin endpoints for users, queries, payments, packages
 **Interfaces:**
 - Consumes: todos os endpoints `/admin/*` (task 9).
 
-- [ ] **Step 1:** E2E: usuário não-admin não vê `/admin`; admin ajusta saldo com motivo e vê a linha no extrato do usuário; admin edita um pacote e o novo preço aparece para o usuário.
-- [ ] **Step 2:** Implementar as páginas com tabelas paginadas, ações de ajuste/reembolso/retry e formulários de pacote.
-- [ ] **Step 3:** Testes PASS. Commit `feat(web): admin backoffice`.
+- [x] **Step 1:** E2E: usuário não-admin não vê `/admin`; admin ajusta saldo com motivo e vê a linha no extrato do usuário; admin edita um pacote e o novo preço aparece para o usuário.
+- [x] **Step 2:** Implementar as páginas com tabelas paginadas, ações de ajuste/reembolso/retry e formulários de pacote.
+- [x] **Step 3:** Testes PASS. Commit `feat(web): admin backoffice`.
 
 ---
 
@@ -397,11 +397,11 @@ git commit -m "feat(api): admin endpoints for users, queries, payments, packages
 **Interfaces:**
 - Consumes: tudo acima.
 
-- [ ] **Step 1:** Dockerfiles multi-stage para `api` e `worker` (mesma base, commands `node dist/main.js` e `node dist/worker.js`).
-- [ ] **Step 2:** `railway.json` com `prisma migrate deploy` no pre-deploy e healthcheck `/ready`; `vercel.json` para o `web`.
-- [ ] **Step 3:** CI: subir Postgres/Redis, `prisma migrate deploy`, seed, build e **rodar os E2E do Playwright**.
-- [ ] **Step 4:** Passar a suíte completa (`pnpm turbo lint typecheck test` + Playwright), rodar a revisão final da branch.
-- [ ] **Step 5:** Commit `chore: docker, deploy config, e2e ci and runbook`.
+- [x] **Step 1:** Dockerfiles multi-stage para `api` e `worker` (mesma base, commands `node dist/main.js` e `node dist/worker.js`).
+- [x] **Step 2:** `railway.json` com `prisma migrate deploy` no pre-deploy e healthcheck `/ready`; `vercel.json` para o `web`.
+- [x] **Step 3:** CI: subir Postgres/Redis, `prisma migrate deploy`, seed, build e **rodar os E2E do Playwright**.
+- [x] **Step 4:** Passar a suíte completa (`pnpm turbo lint typecheck test` + Playwright), rodar a revisão final da branch.
+- [x] **Step 5:** Commit `chore: docker, deploy config, e2e ci and runbook`.
 
 ---
 

@@ -309,32 +309,25 @@ export class CreditsService {
       );
     }
 
-    let where: Prisma.CreditTransactionWhereInput = { userId };
+    const where: Prisma.CreditTransactionWhereInput = { userId };
+    let cursor: { id: string } | undefined;
 
     if (options.cursor) {
       const cursorTransaction = await this.client.creditTransaction.findFirst({
         where: { id: options.cursor, userId },
-        select: { id: true, createdAt: true },
+        select: { id: true },
       });
 
       if (!cursorTransaction) {
         return [];
       }
 
-      where = {
-        userId,
-        OR: [
-          { createdAt: { lt: cursorTransaction.createdAt } },
-          {
-            createdAt: cursorTransaction.createdAt,
-            id: { lt: cursorTransaction.id },
-          },
-        ],
-      };
+      cursor = { id: cursorTransaction.id };
     }
 
     return this.client.creditTransaction.findMany({
       where,
+      ...(cursor ? { cursor, skip: 1 } : {}),
       take: limit,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     });

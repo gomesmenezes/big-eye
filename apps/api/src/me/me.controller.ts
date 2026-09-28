@@ -21,6 +21,6 @@ export class MeController {
   @ApiOkResponse({ type: MeResponseDto })
   @ZodSerializerDto(MeResponseDto)
   getMe(@CurrentUser() user: ApiUser) {
-    return this.meService.getMe(user.id);
+    return this.meService.getMe(user);
   }
 }

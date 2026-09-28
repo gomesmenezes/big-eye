@@ -14,6 +14,7 @@ import {
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { z } from 'zod';
 
+import { getModule } from '@big-eye/contracts';
 import { CreditsService } from '@big-eye/core/credits/credits.service';
 import { Prisma, QueryStatus, type PrismaClient } from '@big-eye/core/db/prisma-client';
 import type { RetryInputCache } from '@big-eye/core/queries/input-retry-cache';
@@ -23,7 +24,14 @@ import { CurrentUser } from '../auth/current-user.decorator.js';
 import { AdminGuard } from '../auth/roles.guard.js';
 import { PRISMA } from '../db/database.module.js';
 
-import { isoDate, parseLimit, parseOptionalDate, writeAudit } from './admin.utils.js';
+import {
+  isoDate,
+  parseCursor,
+  parseLimit,
+  parseOptionalDate,
+  parseOptionalText,
+  writeAudit,
+} from './admin.utils.js';
 
 export const ADMIN_QUERY_QUEUE = Symbol('ADMIN_QUERY_QUEUE');
 export const ADMIN_RETRY_INPUT_CACHE = Symbol('ADMIN_RETRY_INPUT_CACHE');
@@ -93,6 +101,7 @@ export class AdminQueriesController {
     const limit = parseLimit(rawLimit);
     const from = parseOptionalDate(fromValue);
     const to = parseOptionalDate(toValue);
+    const moduleFilter = parseOptionalText(moduleSlug, 100);
 
     if (from && to && from > to) {
       throw new BadRequestException({ code: 'INVALID_INPUT' });
@@ -113,15 +122,16 @@ export class AdminQueriesController {
 
     const baseWhere: Prisma.QueryWhereInput = {
       ...(userId ? { userId } : {}),
-      ...(moduleSlug ? { moduleSlug } : {}),
+      ...(moduleFilter ? { moduleSlug: moduleFilter } : {}),
       ...(status ? { status } : {}),
       ...((from || to) ? { createdAt: { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } } : {}),
     };
 
     let where: Prisma.QueryWhereInput = baseWhere;
-    if (cursor) {
-      const cursorRow = await this.prisma.query.findUnique({
-        where: { id: cursor },
+    const parsedCursor = parseCursor(cursor);
+    if (parsedCursor) {
+      const cursorRow = await this.prisma.query.findFirst({
+        where: { AND: [baseWhere, { id: parsedCursor }] },
         select: { id: true, createdAt: true },
       });
 
@@ -200,10 +210,14 @@ export class AdminQueriesController {
       throw new ConflictException({ code: 'QUERY_RETRY_NOT_AVAILABLE' });
     }
 
-    const cachedInput =
-      current.input === null
-        ? await this.retryInputCache.get(queryId)
-        : current.input;
+    let cachedInput: unknown = current.input;
+    if (cachedInput === null) {
+      try {
+        cachedInput = await this.retryInputCache.get(queryId);
+      } catch {
+        throw new ConflictException({ code: 'QUERY_RETRY_INPUT_INVALID' });
+      }
+    }
 
     const updated = await this.prisma.$transaction(async (tx) => {
       await lockQuery(tx, queryId);
@@ -224,6 +238,11 @@ export class AdminQueriesController {
         throw new ConflictException({ code: 'QUERY_RETRY_INPUT_EXPIRED' });
       }
 
+      const retryInput = toValidatedRetryInput(query.moduleSlug, cachedInput);
+      if (!retryInput) {
+        throw new ConflictException({ code: 'QUERY_RETRY_INPUT_INVALID' });
+      }
+
       const retried = await tx.query.update({
         where: { id: queryId },
         data: {
@@ -235,7 +254,7 @@ export class AdminQueriesController {
           errorMessage: null,
           startedAt: null,
           finishedAt: null,
-          input: query.input ?? (cachedInput as Prisma.InputJsonObject),
+          input: retryInput,
         },
         select: querySelect,
       });
@@ -266,14 +285,62 @@ export class AdminQueriesController {
     try {
       await this.queryQueue.add('query:run', { queryId }, { jobId: `admin-retry:${queryId}:${Date.now()}` });
     } catch (error) {
-      await this.prisma.query.updateMany({
-        where: { id: queryId, status: QueryStatus.pending },
-        data: {
-          status: updated.status === QueryStatus.pending ? QueryStatus.failed : updated.status,
-          errorCode: 'QUERY_FAILED',
-          errorMessage: 'A consulta não pôde ser reenfileirada.',
-          finishedAt: new Date(),
-        },
+      await this.prisma.$transaction(async (tx) => {
+        await lockQuery(tx, queryId);
+        const current = await tx.query.findUnique({
+          where: { id: queryId },
+          select: { status: true, userId: true, creditsCharged: true },
+        });
+
+        if (!current || current.status !== QueryStatus.pending) {
+          return;
+        }
+
+        await tx.query.update({
+          where: { id: queryId },
+          data: {
+            status: QueryStatus.failed,
+            input: Prisma.JsonNull,
+            nextPollAt: null,
+            errorCode: 'QUERY_FAILED',
+            errorMessage: 'A consulta não pôde ser reenfileirada.',
+            finishedAt: new Date(),
+          },
+        });
+        await tx.queryEvent.create({
+          data: {
+            queryId,
+            fromStatus: QueryStatus.pending,
+            toStatus: QueryStatus.failed,
+            source: 'admin',
+            message: 'A consulta não pôde ser reenfileirada.',
+          },
+        });
+        await this.credits.refundQuery(tx, {
+          userId: current.userId,
+          queryId,
+          amount: current.creditsCharged,
+          reason: 'QUERY_FAILED',
+        });
+        await tx.query.update({
+          where: { id: queryId },
+          data: { status: QueryStatus.refunded },
+        });
+        await tx.queryEvent.create({
+          data: {
+            queryId,
+            fromStatus: QueryStatus.failed,
+            toStatus: QueryStatus.refunded,
+            source: 'admin',
+            message: 'Créditos reembolsados.',
+          },
+        });
+        await writeAudit(tx, {
+          adminUserId: admin.id,
+          targetUserId: current.userId,
+          action: 'query.retry.failed',
+          payload: { queryId, reason: 'QUEUE_UNAVAILABLE' },
+        });
       });
       throw error;
     }
@@ -370,6 +437,28 @@ const querySelect = {
   finishedAt: true,
   createdAt: true,
 } as const;
+
+function toValidatedRetryInput(
+  moduleSlug: string,
+  input: unknown,
+): Prisma.InputJsonObject | null {
+  const contract = getModule(moduleSlug);
+  if (!contract) {
+    return null;
+  }
+
+  const parsed = contract.input.safeParse(input);
+  if (
+    !parsed.success ||
+    typeof parsed.data !== 'object' ||
+    parsed.data === null ||
+    Array.isArray(parsed.data)
+  ) {
+    return null;
+  }
+
+  return JSON.parse(JSON.stringify(parsed.data)) as Prisma.InputJsonObject;
+}
 
 function toQuerySummary(query: QueryWithEvents) {
   return {

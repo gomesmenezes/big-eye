@@ -24,7 +24,9 @@ import { PRISMA } from '../db/database.module.js';
 
 import {
   isoDate,
+  parseCursor,
   parseLimit,
+  parseOptionalText,
   writeAudit,
 } from './admin.utils.js';
 
@@ -62,7 +64,7 @@ export class AdminUsersController {
     @Query('cursor') cursor: string | undefined,
   ) {
     const limit = parseLimit(rawLimit);
-    const search = query?.trim();
+    const search = parseOptionalText(query, 200);
     const baseWhere: Prisma.ProfileWhereInput = search
       ? {
           OR: [
@@ -73,9 +75,10 @@ export class AdminUsersController {
       : {};
 
     let where: Prisma.ProfileWhereInput = baseWhere;
-    if (cursor) {
-      const cursorRow = await this.prisma.profile.findUnique({
-        where: { id: cursor },
+    const parsedCursor = parseCursor(cursor);
+    if (parsedCursor) {
+      const cursorRow = await this.prisma.profile.findFirst({
+        where: { AND: [baseWhere, { id: parsedCursor }] },
         select: { id: true, createdAt: true },
       });
 
@@ -144,7 +147,7 @@ export class AdminUsersController {
     }
 
     const limit = parseLimit(rawLimit);
-    const transactions = await this.listTransactions(userId, limit, cursor);
+    const transactions = await this.listTransactions(userId, limit, parseCursor(cursor));
 
     return {
       ...toProfileSummary(profile),
@@ -257,9 +260,10 @@ export class AdminUsersController {
   private async listTransactions(userId: string, limit: number, cursor?: string) {
     let where: Prisma.CreditTransactionWhereInput = { userId };
 
-    if (cursor) {
+    const parsedCursor = parseCursor(cursor);
+    if (parsedCursor) {
       const cursorRow = await this.prisma.creditTransaction.findFirst({
-        where: { id: cursor, userId },
+        where: { id: parsedCursor, userId },
         select: { id: true, createdAt: true },
       });
 

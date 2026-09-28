@@ -26,7 +26,7 @@ import { CurrentUser } from '../auth/current-user.decorator.js';
 import { AdminGuard } from '../auth/roles.guard.js';
 import { PRISMA } from '../db/database.module.js';
 
-import { isoDate, parseLimit, writeAudit } from './admin.utils.js';
+import { isoDate, parseCursor, parseLimit, writeAudit } from './admin.utils.js';
 
 const paymentStatus = z.enum(['pending', 'paid', 'failed', 'expired', 'refunded']);
 const STALE_PAYMENT_AGE_MS = 24 * 60 * 60 * 1000;
@@ -69,9 +69,10 @@ export class AdminPaymentsController {
     };
     let where: Prisma.PaymentWhereInput = baseWhere;
 
-    if (cursor) {
-      const cursorRow = await this.prisma.payment.findUnique({
-        where: { id: cursor },
+    const parsedCursor = parseCursor(cursor);
+    if (parsedCursor) {
+      const cursorRow = await this.prisma.payment.findFirst({
+        where: { AND: [baseWhere, { id: parsedCursor }] },
         select: { id: true, createdAt: true },
       });
 
@@ -228,7 +229,6 @@ const paymentSelect = {
   amountCents: true,
   credits: true,
   status: true,
-  pixQrCode: true,
   pixExpiresAt: true,
   paidAt: true,
   createdAt: true,
@@ -243,7 +243,6 @@ function toPaymentView(payment: {
   amountCents: number;
   credits: number;
   status: string;
-  pixQrCode: string | null;
   pixExpiresAt: Date | null;
   paidAt: Date | null;
   createdAt: Date;
@@ -257,7 +256,6 @@ function toPaymentView(payment: {
     amountCents: payment.amountCents,
     credits: payment.credits,
     status: payment.status,
-    pixQrCode: payment.pixQrCode,
     expiresAt: isoDate(payment.pixExpiresAt),
     paidAt: isoDate(payment.paidAt),
     createdAt: payment.createdAt.toISOString(),

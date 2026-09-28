@@ -24,15 +24,17 @@ import { CurrentUser } from '../auth/current-user.decorator.js';
 import { AdminGuard } from '../auth/roles.guard.js';
 import { PRISMA } from '../db/database.module.js';
 
-import { parseLimit, writeAudit } from './admin.utils.js';
+import { parseBooleanQuery, parseCursor, parseLimit, writeAudit } from './admin.utils.js';
 
+const MAX_DATABASE_INT = 2_147_483_647;
+const MIN_DATABASE_INT = -2_147_483_648;
 const packageFields = {
   slug: z.string().trim().regex(/^[a-z0-9-]+$/).min(1).max(100),
-  credits: z.number().int().min(1),
-  priceCents: z.number().int().min(1),
+  credits: z.number().int().min(1).max(MAX_DATABASE_INT),
+  priceCents: z.number().int().min(1).max(MAX_DATABASE_INT),
   currency: z.literal('BRL').default('BRL'),
   active: z.boolean().default(true),
-  sort: z.number().int().default(0),
+  sort: z.number().int().min(MIN_DATABASE_INT).max(MAX_DATABASE_INT).default(0),
 };
 
 const createPackageBody = z.object(packageFields);
@@ -43,7 +45,7 @@ const updatePackageBody = z
     priceCents: packageFields.priceCents.optional(),
     currency: z.literal('BRL').optional(),
     active: z.boolean().optional(),
-    sort: z.number().int().optional(),
+    sort: packageFields.sort.optional(),
   })
   .refine((value) => Object.keys(value).length > 0, 'Informe ao menos um campo.');
 
@@ -61,13 +63,14 @@ export class AdminPackagesController {
     @Query('cursor') cursor: string | undefined,
   ) {
     const limit = parseLimit(rawLimit);
-    const activeOnly = includeInactive !== 'true';
+    const activeOnly = !parseBooleanQuery(includeInactive);
     const baseWhere: Prisma.CreditPackageWhereInput = activeOnly ? { active: true } : {};
     let where: Prisma.CreditPackageWhereInput = baseWhere;
 
-    if (cursor) {
-      const cursorRow = await this.prisma.creditPackage.findUnique({
-        where: { id: cursor },
+    const parsedCursor = parseCursor(cursor);
+    if (parsedCursor) {
+      const cursorRow = await this.prisma.creditPackage.findFirst({
+        where: { AND: [baseWhere, { id: parsedCursor }] },
         select: { id: true, createdAt: true },
       });
 

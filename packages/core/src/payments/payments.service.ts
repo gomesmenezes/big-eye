@@ -131,7 +131,11 @@ export class PaymentsService {
         data: {
           providerPaymentId: checkout.providerPaymentId,
           pixQrCode: checkout.pixQrCode,
-          pixExpiresAt: checkout.expiresAt,
+          // The schema only stores an expiration for Pix charges. A card
+          // provider may return an expiry for its hosted checkout as well,
+          // but treating that value as a Pix expiration would make the
+          // expiration job incorrectly expire card payments.
+          pixExpiresAt: input.method === 'pix' ? checkout.expiresAt : undefined,
         },
       });
 
@@ -252,7 +256,15 @@ export class PaymentsService {
         continue;
       }
 
-      const status = await this.provider.getStatus(payment.providerPaymentId);
+      let status: ProviderPaymentStatus;
+
+      try {
+        status = await this.provider.getStatus(payment.providerPaymentId);
+      } catch {
+        // A provider failure for one payment must not prevent the remaining
+        // pending payments from being reconciled in this run.
+        continue;
+      }
 
       if (status === 'pending') {
         continue;

@@ -19,6 +19,14 @@ Copie o arquivo de ambiente e preencha os valores do Supabase e a chave usada pe
 cp .env.example .env
 ```
 
+Carregue as variáveis da raiz para preparar o banco. Os comandos `pnpm --filter` rodam dentro de cada workspace, por isso precisam desse passo:
+
+```bash
+set -a
+source .env
+set +a
+```
+
 Suba Postgres e Redis, instale as dependências e prepare o banco local:
 
 ```bash
@@ -30,13 +38,13 @@ pnpm --filter @big-eye/core db:migrate
 pnpm --filter @big-eye/core db:seed
 ```
 
-Em terminais separados, inicie a API, o worker e o web:
+Com o banco pronto, inicie API, worker e web juntos na raiz:
 
 ```bash
-pnpm --filter @big-eye/api start:dev
-pnpm --filter @big-eye/worker start:dev
-pnpm --filter @big-eye/web dev
+npm run dev
 ```
+
+Esse comando carrega o `.env` da raiz e inicia os três serviços. Use `Ctrl+C` para encerrar.
 
 A API fica em `http://localhost:3001`, o web em `http://localhost:3000`, a documentação OpenAPI em `/docs` e os endpoints de saúde em `/health` e `/ready`.
 
@@ -52,7 +60,7 @@ pnpm turbo run build
 pnpm --filter @big-eye/web test:e2e
 ```
 
-Os testes Playwright usam um projeto Supabase configurado e um usuário de teste. Defina `WEB_URL`, `NEXT_PUBLIC_API_URL`, as variáveis públicas do Supabase e `SUPABASE_TEST_EMAIL`/`SUPABASE_TEST_PASSWORD`. Os testes do backoffice também exigem `SUPABASE_ADMIN_EMAIL`/`SUPABASE_ADMIN_PASSWORD`.
+Antes de rodar o Playwright, carregue novamente as variáveis com `set -a; source .env; set +a` e defina as credenciais dos usuários de teste. Os testes usam um projeto Supabase configurado e `SUPABASE_TEST_EMAIL`/`SUPABASE_TEST_PASSWORD`; os testes do backoffice também exigem `SUPABASE_ADMIN_EMAIL`/`SUPABASE_ADMIN_PASSWORD`.
 
 Antes de rodar os E2E, deixe API, worker, Postgres, Redis e o banco migrado. O Playwright instala e gerencia o servidor Next quando `CI` está definido; localmente, um web já iniciado pode ser reutilizado.
 

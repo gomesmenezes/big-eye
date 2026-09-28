@@ -49,8 +49,13 @@ As variáveis `NEXT_PUBLIC_*` são incorporadas ao build do Next. Não reutilize
 
 ## Primeiro ambiente local
 
+Crie o `.env` na raiz e preencha as credenciais. Como `pnpm --filter` executa cada comando dentro da pasta do workspace, exporte as variáveis da raiz em cada terminal antes de rodar Prisma ou iniciar um serviço:
+
 ```bash
 cp .env.example .env
+set -a
+source .env
+set +a
 docker compose up -d
 pnpm install
 pnpm --filter @big-eye/core db:test:prepare
@@ -59,6 +64,8 @@ pnpm --filter @big-eye/core db:seed
 ```
 
 O fixture `db:test:prepare` cria uma tabela mínima `auth.users` apenas no banco local `bigeye`, para a migração do trigger funcionar. Nunca execute esse comando apontando para um banco remoto.
+
+Com banco e dependências prontos, `npm run dev` na raiz carrega o `.env` e inicia API, worker e web. `Ctrl+C` encerra os três serviços.
 
 O seed cria os três pacotes padrão. Em ambiente não produtivo também cria o perfil admin `admin@big-eye.local`; ele não cria uma conta correspondente no Supabase Auth.
 
