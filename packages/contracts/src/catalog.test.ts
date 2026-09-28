@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { getModule, MODULES } from './index.js';
 
-describe('catálogo de módulos', () => {
+describe('catálogo de Chamadas/Consultas', () => {
   it('tem slugs únicos, não vazios e no formato público', () => {
     const slugs = MODULES.map((module) => module.slug);
 
@@ -18,7 +18,7 @@ describe('catálogo de módulos', () => {
     }
   });
 
-  it('tem as quatro categorias e os dois módulos da fase 1 implementados', () => {
+  it('tem as quatro categorias e as duas Chamadas/Consultas da fase 1 implementadas', () => {
     expect(new Set(MODULES.map((module) => module.categoria))).toEqual(
       new Set(['pessoais', 'veiculares', 'empresariais', 'web']),
     );
@@ -29,7 +29,7 @@ describe('catálogo de módulos', () => {
     ]);
   });
 
-  it('encontra um módulo pelo slug e devolve undefined para slug desconhecido', () => {
+  it('encontra uma Chamada/Consulta pelo slug e devolve undefined para slug desconhecido', () => {
     expect(getModule('cpf-basico')?.nome).toBe('CPF Completo');
     expect(getModule('nao-existe')).toBeUndefined();
   });

@@ -185,7 +185,7 @@ export class QueriesService {
     const contract = getModule(moduleSlug);
 
     if (!contract) {
-      throw new QueryServiceError(ERROR_CODES.MODULE_NOT_FOUND, 'Módulo não encontrado.');
+      throw new QueryServiceError(ERROR_CODES.MODULE_NOT_FOUND, 'Chamada/Consulta não encontrada.');
     }
 
     const parsedInput = contract.input.safeParse(input);
@@ -197,7 +197,7 @@ export class QueriesService {
     if (!contract.implemented) {
       throw new QueryServiceError(
         ERROR_CODES.PROVIDER_UNAVAILABLE,
-        'Módulo temporariamente indisponível.',
+        'Chamada/Consulta temporariamente indisponível.',
       );
     }
 

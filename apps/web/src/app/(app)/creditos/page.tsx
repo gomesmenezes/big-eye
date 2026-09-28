@@ -2,18 +2,58 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import {
+  Coins,
+  ArrowDownLeft,
+  ArrowUpRight,
+  Gift,
+  RotateCcw,
+  SlidersHorizontal,
+  ChevronLeft,
+  Loader2,
+  AlertCircle,
+  Receipt,
+} from 'lucide-react';
 
 import type { MeDTOType, PackageDTOType, TransactionDTOType } from '@big-eye/contracts';
 
 import { BuyCredits } from '../../../components/buy-credits';
 import { apiFetch, apiFetchPath } from '../../../lib/api';
 
-const transactionLabels: Record<TransactionDTOType['type'], string> = {
-  signup_bonus: 'Bônus de cadastro',
-  purchase: 'Compra de créditos',
-  consume: 'Consulta realizada',
-  refund: 'Reembolso de consulta',
-  admin_adjust: 'Ajuste administrativo',
+const transactionConfig: Record<
+  TransactionDTOType['type'],
+  { label: string; icon: typeof ArrowDownLeft; color: string; badge: string }
+> = {
+  signup_bonus: {
+    label: 'Bônus de cadastro',
+    icon: Gift,
+    color: 'text-violet-400 bg-violet-950/60 border border-violet-800/40',
+    badge: 'text-violet-300',
+  },
+  purchase: {
+    label: 'Compra de créditos',
+    icon: ArrowDownLeft,
+    color: 'text-emerald-400 bg-emerald-950/60 border border-emerald-800/40',
+    badge: 'text-emerald-300',
+  },
+  consume: {
+    label: 'Consulta realizada',
+    icon: ArrowUpRight,
+    color: 'text-slate-400 bg-[#181926] border border-[#2a2d40]',
+    badge: 'text-slate-300',
+  },
+  refund: {
+    label: 'Reembolso de consulta',
+    icon: RotateCcw,
+    color: 'text-sky-400 bg-sky-950/60 border border-sky-800/40',
+    badge: 'text-sky-300',
+  },
+  admin_adjust: {
+    label: 'Ajuste administrativo',
+    icon: SlidersHorizontal,
+    color: 'text-amber-400 bg-amber-950/60 border border-amber-800/40',
+    badge: 'text-amber-300',
+  },
 };
 
 function formatDate(value: string): string {
@@ -76,67 +116,179 @@ export default function CreditsPage() {
   }
 
   if (isLoading) {
-    return <CreditsFrame><div className="h-8 w-48 animate-pulse rounded bg-slate-200" /></CreditsFrame>;
+    return (
+      <CreditsFrame>
+        <div className="space-y-4 animate-pulse">
+          <div className="h-10 w-48 rounded-xl bg-[#12131d]" />
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="h-96 rounded-2xl bg-[#12131d]" />
+            <div className="h-96 rounded-2xl bg-[#12131d]" />
+          </div>
+        </div>
+      </CreditsFrame>
+    );
   }
 
   if (error && !me) {
-    return <CreditsFrame><ErrorPanel message={error} onRetry={() => window.location.reload()} /></CreditsFrame>;
+    return (
+      <CreditsFrame>
+        <div className="rounded-2xl border border-red-900/40 bg-red-950/20 p-6 text-sm text-red-300">
+          <p>{error}</p>
+          <button className="mt-3 text-xs font-semibold underline" onClick={() => window.location.reload()} type="button">
+            Tentar novamente
+          </button>
+        </div>
+      </CreditsFrame>
+    );
   }
 
   return (
     <CreditsFrame>
-      <section className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
+      {/* Header */}
+      <section className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-petrol-600">Carteira</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Créditos e extrato</h1>
-          <p className="mt-2 max-w-xl text-slate-600">Acompanhe seu saldo e compre créditos para continuar consultando.</p>
+          <h1 className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
+            Créditos & Extrato
+          </h1>
+          <p className="mt-1 text-xs text-slate-400">
+            Adicione créditos à sua carteira para continuar desbloqueando consultas.
+          </p>
         </div>
-        <div className="rounded-2xl border border-petrol-100 bg-petrol-50 px-6 py-4">
-          <p className="text-sm font-medium text-petrol-800">Saldo disponível</p>
-          <p className="mt-1 text-3xl font-semibold text-petrol-950">{me?.balance ?? 0}</p>
+
+        {/* Balance Card Header */}
+        <div className="flex items-center gap-3 rounded-2xl border border-[#1e202f] bg-[#12131d] p-4 shadow-card">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-950/60 text-violet-400 border border-violet-800/40">
+            <Coins className="h-6 w-6" />
+          </div>
+          <div>
+            <p className="text-[11px] font-medium text-slate-400">Saldo disponível</p>
+            <p className="text-2xl font-black text-white">{me?.balance ?? 0}</p>
+          </div>
         </div>
       </section>
 
-      <div className="mt-10 grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+      {/* Main Grid: Buy Credits + Statement */}
+      <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
         <BuyCredits onPaymentPaid={refreshAfterPayment} packages={packages} />
-        <TransactionStatement hasMore={hasMore} isLoadingMore={isLoadingMore} onLoadMore={loadMore} transactions={transactions} />
+        <TransactionStatement
+          hasMore={hasMore}
+          isLoadingMore={isLoadingMore}
+          onLoadMore={loadMore}
+          transactions={transactions}
+        />
       </div>
-      {error ? <p className="mt-4 rounded-lg bg-red-50 px-3 py-2.5 text-sm text-red-700" role="alert">{error}</p> : null}
-      <Link className="mt-8 inline-block text-sm font-semibold text-petrol-700 hover:text-petrol-800" href="/catalogo">← Voltar ao catálogo</Link>
+
+      {error ? (
+        <div className="mt-6 flex items-start gap-2.5 rounded-xl border border-red-900/60 bg-red-950/30 p-4 text-xs text-red-300" role="alert">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
+          <span>{error}</span>
+        </div>
+      ) : null}
+
+      <div className="mt-8">
+        <Link
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 transition hover:text-violet-400"
+          href="/catalogo"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          <span>← Voltar ao catálogo</span>
+        </Link>
+      </div>
     </CreditsFrame>
   );
 }
 
-function TransactionStatement({ transactions, hasMore, isLoadingMore, onLoadMore }: { transactions: TransactionDTOType[]; hasMore: boolean; isLoadingMore: boolean; onLoadMore: () => Promise<void> }) {
+function TransactionStatement({
+  transactions,
+  hasMore,
+  isLoadingMore,
+  onLoadMore,
+}: {
+  transactions: TransactionDTOType[];
+  hasMore: boolean;
+  isLoadingMore: boolean;
+  onLoadMore: () => Promise<void>;
+}) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div>
-        <p className="text-sm font-semibold uppercase tracking-[0.14em] text-petrol-600">Extrato</p>
-        <h2 className="mt-1 text-xl font-semibold text-slate-950">Movimentações recentes</h2>
+    <section className="rounded-2xl border border-[#1e202f] bg-[#12131d] p-6 shadow-card sm:p-8">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="h-4 w-1 rounded-full bg-violet-500" />
+            <p className="text-xs font-semibold uppercase tracking-wider text-violet-400">Extrato</p>
+          </div>
+          <h2 className="mt-1 text-xl font-bold tracking-tight text-white">
+            Movimentações
+          </h2>
+        </div>
+        <span className="rounded-full border border-[#2a2d40] bg-[#181926] px-2.5 py-0.5 text-xs font-semibold text-slate-400">
+          {transactions.length} registros
+        </span>
       </div>
+
       {transactions.length === 0 ? (
-        <p className="mt-6 rounded-lg bg-slate-50 p-4 text-sm text-slate-600">Ainda não há movimentações para exibir.</p>
+        <div className="mt-6 rounded-2xl border border-[#1e202f] bg-[#181926] p-8 text-center">
+          <p className="text-xs font-medium text-slate-300">Ainda não há movimentações para exibir.</p>
+          <p className="mt-1 text-[11px] text-slate-500">Suas compras e consultas aparecerão aqui.</p>
+        </div>
       ) : (
         <>
-          <ul className="mt-5 divide-y divide-slate-100">
-            {transactions.map((transaction) => (
-              <li className="flex items-start justify-between gap-4 py-3 first:pt-0" key={transaction.id}>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-slate-900">{transactionLabels[transaction.type]}</p>
-                  <p className="mt-1 text-xs text-slate-500">{formatDate(transaction.createdAt)}</p>
-                </div>
-                <div className="shrink-0 text-right">
-                  <p className={`text-sm font-semibold ${transaction.amount >= 0 ? 'text-emerald-700' : 'text-slate-900'}`}>
-                    {transaction.amount > 0 ? '+' : ''}{transaction.amount}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">saldo {transaction.balanceAfter}</p>
-                </div>
-              </li>
-            ))}
+          <ul className="mt-6 divide-y divide-[#1e202f]">
+            {transactions.map((transaction) => {
+              const conf = transactionConfig[transaction.type] ?? {
+                label: 'Movimentação',
+                icon: Coins,
+                color: 'text-slate-400 bg-[#181926] border border-[#2a2d40]',
+                badge: 'text-slate-300',
+              };
+              const Icon = conf.icon;
+
+              return (
+                <li
+                  className="flex items-start justify-between gap-4 py-3.5 transition first:pt-0 last:pb-0 hover:bg-[#151724]"
+                  key={transaction.id}
+                >
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${conf.color}`}>
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-bold text-white">{conf.label}</p>
+                      <p className="mt-0.5 text-[11px] text-slate-500">{formatDate(transaction.createdAt)}</p>
+                    </div>
+                  </div>
+
+                  <div className="shrink-0 text-right">
+                    <p
+                      className={`text-xs font-extrabold ${
+                        transaction.amount >= 0 ? 'text-emerald-400' : 'text-slate-200'
+                      }`}
+                    >
+                      {transaction.amount > 0 ? '+' : ''}
+                      {transaction.amount}
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-slate-500">saldo {transaction.balanceAfter}</p>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
+
           {hasMore ? (
-            <button className="mt-4 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60" disabled={isLoadingMore} onClick={() => void onLoadMore()} type="button">
-              {isLoadingMore ? 'Carregando...' : 'Carregar mais'}
+            <button
+              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#2a2d40] bg-[#181926] py-2.5 px-4 text-xs font-semibold text-slate-300 shadow-xs transition hover:bg-[#202234] hover:text-white disabled:opacity-60"
+              disabled={isLoadingMore}
+              onClick={() => void onLoadMore()}
+              type="button"
+            >
+              {isLoadingMore ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <span>Carregando...</span>
+                </>
+              ) : (
+                <span>Carregar mais movimentações</span>
+              )}
             </button>
           ) : null}
         </>
@@ -146,18 +298,5 @@ function TransactionStatement({ transactions, hasMore, isLoadingMore, onLoadMore
 }
 
 function CreditsFrame({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">{children}</div>;
-}
-
-function ErrorPanel({ message, onRetry }: Readonly<{ message: string; onRetry?: () => void }>) {
-  return (
-    <div className="rounded-2xl border border-red-100 bg-red-50 p-6 text-sm text-red-800" role="alert">
-      <p>{message}</p>
-      {onRetry ? (
-        <button className="mt-3 font-semibold underline" onClick={onRetry} type="button">
-          Tentar novamente
-        </button>
-      ) : null}
-    </div>
-  );
+  return <div className="space-y-6">{children}</div>;
 }

@@ -29,6 +29,8 @@ O Dockerfile da API inicia `apps/api/dist/main.js`. O Dockerfile do worker inici
 | `PAYMENT_PROVIDER` | Provider de pagamento | `fake`, `mercado-pago` ou `pagarme` |
 | `FAKE_PAYMENT_SECRET` | Assinatura do provider fake | Obrigatória mesmo com outro provider configurado pelo schema atual |
 | `PROVIDER_MODE` | Provider de consultas | `fake` ou `upstream` |
+| `ATHENAS_API_KEY` | Autenticação na Athenas | Obrigatória com `PROVIDER_MODE=upstream`; configure somente na API e no worker |
+| `ATHENAS_API_BASE_URL` | Base URL Athenas | Padrão `https://api.athenasbuscas.com/api/ext/v1` |
 | `WEB_ORIGIN` | Allowlist CORS | Uma ou mais origens HTTPS separadas por vírgula |
 | `API_PORT` | Porta HTTP | Railway deve encaminhar para a porta configurada |
 | `QUERY_TIMEOUT_MS` | Timeout do provider sync | Inteiro positivo em milissegundos |
@@ -46,6 +48,12 @@ O worker aceita estas opções com defaults seguros: `QUERY_MAX_POLL_ATTEMPTS`, 
 - `SUPABASE_ADMIN_EMAIL` e `SUPABASE_ADMIN_PASSWORD`: usuário admin usado pelos E2E do backoffice.
 
 As variáveis `NEXT_PUBLIC_*` são incorporadas ao build do Next. Não reutilize nelas uma chave service role.
+
+### Consultas Athenas
+
+Configure `PROVIDER_MODE=upstream` e `ATHENAS_API_KEY` nos serviços da API e do worker. A API exige a chave na inicialização; o worker usa a mesma chave para as consultas assíncronas. O adaptador envia `X-API-Key`, trata `404` como consulta sem dados e deixa o fluxo existente reembolsar o crédito Big Eye em qualquer falha. O Dossiê 360 usa timeout de 60 segundos conforme a latência indicada pela Athenas.
+
+Atualmente, o catálogo habilita `cpf-basico` (`GET /cpf/:cpf`) e `dossie-360` (`GET /dossie-360/:cpf`). Os outros itens ainda estão marcados como indisponíveis no catálogo.
 
 ## Primeiro ambiente local
 

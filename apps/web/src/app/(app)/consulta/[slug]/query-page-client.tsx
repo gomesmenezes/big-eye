@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
+import { ChevronLeft, ShieldCheck, Zap, Clock, Coins, Sparkles } from 'lucide-react';
 
 import type { QueryDTOType } from '@big-eye/contracts';
 
@@ -36,7 +37,7 @@ export default function QueryPageClient({ slug }: QueryPageClientProps) {
         const selected = modules.find((candidate) => candidate.slug === slug);
 
         if (!selected) {
-          throw new Error('Módulo não encontrado.');
+          throw new Error('Chamada/Consulta não encontrada.');
         }
 
         if (active) {
@@ -44,7 +45,7 @@ export default function QueryPageClient({ slug }: QueryPageClientProps) {
         }
       } catch (caughtError) {
         if (active) {
-          setError(errorMessage(caughtError, 'Não foi possível carregar este módulo.'));
+          setError(errorMessage(caughtError, 'Não foi possível carregar esta Chamada/Consulta.'));
         }
       } finally {
         if (active) {
@@ -120,7 +121,6 @@ export default function QueryPageClient({ slug }: QueryPageClientProps) {
     }
   }
 
-  /** Keep SSE as the fast path while polling provides a recovery watchdog. */
   async function watchSse(initialQuery: QueryDTOType, signal: AbortSignal): Promise<void> {
     while (!signal.aborted) {
       let terminalEvent = false;
@@ -198,20 +198,23 @@ export default function QueryPageClient({ slug }: QueryPageClientProps) {
   }
 
   if (isLoading) {
-    return <PageFrame><div className="h-8 w-72 animate-pulse rounded bg-slate-200" /></PageFrame>;
+    return <PageFrame><div className="h-8 w-72 animate-pulse rounded bg-[#12131d]" /></PageFrame>;
   }
 
   if (error || !module) {
-    return <PageFrame><ErrorPanel message={error ?? 'Módulo não encontrado.'} /></PageFrame>;
+    return <PageFrame><ErrorPanel message={error ?? 'Chamada/Consulta não encontrada.'} /></PageFrame>;
   }
 
   if (!module.implemented) {
     return (
       <PageFrame>
-        <Link className="text-sm font-semibold text-petrol-700 hover:text-petrol-800" href="/catalogo">← Voltar ao catálogo</Link>
-        <div className="mt-8 rounded-2xl border border-amber-100 bg-amber-50 p-8">
-          <h1 className="text-2xl font-semibold text-amber-950">Módulo em preparação</h1>
-          <p className="mt-2 text-sm text-amber-900">Este módulo ainda não está disponível para consultas.</p>
+        <Link className="inline-flex items-center gap-1 text-xs font-semibold text-violet-400 hover:text-violet-300" href="/catalogo">
+          <ChevronLeft className="h-4 w-4" />
+          <span>Voltar ao catálogo</span>
+        </Link>
+        <div className="mt-8 rounded-2xl border border-amber-900/40 bg-amber-950/20 p-8">
+          <h1 className="text-xl font-bold text-amber-200">Chamada/Consulta em preparação</h1>
+          <p className="mt-2 text-xs text-amber-300">Esta Chamada/Consulta ainda não está disponível para consultas.</p>
         </div>
       </PageFrame>
     );
@@ -219,20 +222,49 @@ export default function QueryPageClient({ slug }: QueryPageClientProps) {
 
   return (
     <PageFrame>
-      <Link className="text-sm font-semibold text-petrol-700 hover:text-petrol-800" href="/catalogo">← Voltar ao catálogo</Link>
-      <section className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+      <Link
+        className="inline-flex items-center gap-1 text-xs font-semibold text-slate-400 transition hover:text-violet-400"
+        href="/catalogo"
+      >
+        <span>← Voltar ao catálogo</span>
+      </Link>
+
+      <section className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-petrol-600">{module.mode === 'async' ? 'Consulta acompanhada' : 'Consulta imediata'}</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">{module.nome}</h1>
-          <p className="mt-3 leading-7 text-slate-600">{module.descricao}</p>
-          <div className="mt-6 flex flex-wrap gap-2">
-            {module.tags.map((tag) => <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600" key={tag}>{tag}</span>)}
+          <div className="flex items-center gap-2">
+            <span className="h-4 w-1 rounded-full bg-violet-500" />
+            <p className="text-xs font-extrabold uppercase tracking-wider text-violet-400">
+              {module.mode === 'async' ? 'Consulta acompanhada' : 'Consulta imediata'}
+            </p>
           </div>
-          <div className="mt-8 rounded-2xl border border-petrol-100 bg-petrol-50 p-5 text-sm text-petrol-900">
-            <p className="font-semibold">{module.custoCreditos} crédito{module.custoCreditos === 1 ? '' : 's'} por consulta</p>
-            <p className="mt-1">O saldo só é debitado quando a consulta é criada. Em uma falha elegível, o crédito é reembolsado pela plataforma.</p>
+
+          <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
+            {module.nome}
+          </h1>
+          <p className="mt-3 text-xs leading-relaxed text-slate-400">{module.descricao}</p>
+
+          <div className="mt-5 flex flex-wrap gap-1.5">
+            {module.tags.map((tag) => (
+              <span
+                className="rounded-full border border-[#26293b] bg-[#181926] px-2.5 py-0.5 text-[10px] font-semibold text-slate-300"
+                key={tag}
+              >
+                #{tag}
+              </span>
+            ))}
+          </div>
+
+          <div className="mt-8 rounded-2xl border border-[#1e202f] bg-[#12131d] p-6 text-xs text-slate-300 shadow-card">
+            <div className="flex items-center gap-2 text-white font-bold text-sm">
+              <Coins className="h-4 w-4 text-violet-400" />
+              <span>{module.custoCreditos} crédito{module.custoCreditos === 1 ? '' : 's'} por consulta</span>
+            </div>
+            <p className="mt-2 leading-relaxed text-slate-400">
+              O débito do crédito ocorre na inicialização da consulta. Em caso de falha elegível de resposta dos provedores, o crédito é estornado automaticamente para a sua conta.
+            </p>
           </div>
         </div>
+
         <div className="space-y-6">
           <QueryForm disabled={isStreaming} module={module} onSubmit={submit} />
           <QueryResult isStreaming={isStreaming} onRetry={resetQuery} query={query} />
@@ -303,7 +335,7 @@ function errorMessage(error: unknown, fallback: string): string {
       INSUFFICIENT_CREDITS: 'Você não tem créditos suficientes. Compre créditos para continuar.',
       INVALID_INPUT: 'Confira os dados informados e tente novamente.',
       PROVIDER_UNAVAILABLE: 'O provedor está temporariamente indisponível.',
-      MODULE_NOT_FOUND: 'Este módulo não está disponível.',
+      MODULE_NOT_FOUND: 'Esta Chamada/Consulta não está disponível.',
     };
     if (typeof code === 'string' && messages[code]) {
       return messages[code];
@@ -314,9 +346,13 @@ function errorMessage(error: unknown, fallback: string): string {
 }
 
 function PageFrame({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">{children}</div>;
+  return <div className="space-y-6">{children}</div>;
 }
 
 function ErrorPanel({ message }: Readonly<{ message: string }>) {
-  return <p className="rounded-2xl border border-red-100 bg-red-50 p-6 text-sm text-red-800" role="alert">{message}</p>;
+  return (
+    <div className="rounded-2xl border border-red-900/60 bg-red-950/30 p-5 text-xs text-red-300" role="alert">
+      {message}
+    </div>
+  );
 }

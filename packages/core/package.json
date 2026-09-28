@@ -26,6 +26,10 @@
       "types": "./dist/provider/provider.client.d.ts",
       "import": "./dist/provider/provider.client.js"
     },
+    "./provider/athenas.provider": {
+      "types": "./dist/provider/athenas.provider.d.ts",
+      "import": "./dist/provider/athenas.provider.js"
+    },
     "./provider/fake.provider": {
       "types": "./dist/provider/fake.provider.d.ts",
       "import": "./dist/provider/fake.provider.js"

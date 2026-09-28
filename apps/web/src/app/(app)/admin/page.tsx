@@ -70,7 +70,7 @@ function DashboardContent({ dashboard }: Readonly<{ dashboard: AdminDashboard }>
 
       <section className="mt-8 rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-100 px-5 py-4">
-          <h3 className="font-semibold text-slate-950">Consultas por módulo</h3>
+          <h3 className="font-semibold text-slate-950">Chamadas/Consultas</h3>
           <p className="mt-1 text-sm text-slate-500">Volume registrado no período consolidado pela API.</p>
         </div>
         {moduleRows.length === 0 ? (
@@ -80,7 +80,7 @@ function DashboardContent({ dashboard }: Readonly<{ dashboard: AdminDashboard }>
             <table className="min-w-full text-left text-sm">
               <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                 <tr>
-                  <th className="px-5 py-3 font-semibold" scope="col">Módulo</th>
+                  <th className="px-5 py-3 font-semibold" scope="col">Chamadas/Consultas</th>
                   <th className="px-5 py-3 font-semibold" scope="col">Consultas</th>
                 </tr>
               </thead>

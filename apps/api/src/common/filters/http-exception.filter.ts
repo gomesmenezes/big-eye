@@ -71,7 +71,7 @@ const codeStatuses: Record<ErrorCode, number> = {
 
 const safeMessages: Record<ErrorCode, string> = {
   [ERROR_CODES.INSUFFICIENT_CREDITS]: 'Créditos insuficientes.',
-  [ERROR_CODES.MODULE_NOT_FOUND]: 'Módulo não encontrado.',
+  [ERROR_CODES.MODULE_NOT_FOUND]: 'Chamada/Consulta não encontrada.',
   [ERROR_CODES.INVALID_INPUT]: 'A requisição contém dados inválidos.',
   [ERROR_CODES.QUERY_FAILED]: 'A consulta não pôde ser concluída.',
   [ERROR_CODES.PROVIDER_UNAVAILABLE]: 'Provedor temporariamente indisponível.',

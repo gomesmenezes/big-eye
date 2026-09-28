@@ -28,6 +28,8 @@ const environmentSchema = z.object({
   PAYMENT_PROVIDER: z.enum(['fake', 'mercado-pago', 'pagarme']),
   FAKE_PAYMENT_SECRET: z.string().trim().min(1),
   PROVIDER_MODE: z.enum(['fake', 'upstream']),
+  ATHENAS_API_KEY: z.string().trim().min(1).optional(),
+  ATHENAS_API_BASE_URL: httpUrl.default('https://api.athenasbuscas.com/api/ext/v1'),
   WEB_ORIGIN: z.string().trim().min(1),
   API_PORT: z.coerce.number().int().min(1).max(65_535),
   QUERY_TIMEOUT_MS: z.coerce.number().int().positive(),
@@ -71,6 +73,12 @@ export function parseEnvironment(values: NodeJS.ProcessEnv): Environment {
       .join('; ');
 
     throw new Error(`Invalid API environment configuration: ${details}`);
+  }
+
+  if (parsed.data.PROVIDER_MODE === 'upstream' && !parsed.data.ATHENAS_API_KEY) {
+    throw new Error(
+      'Invalid API environment configuration: ATHENAS_API_KEY: required when PROVIDER_MODE=upstream.',
+    );
   }
 
   try {

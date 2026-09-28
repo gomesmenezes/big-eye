@@ -1,7 +1,9 @@
 'use client';
 
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
+import { Mail, Lock, User, AlertCircle, CheckCircle2, ArrowRight, Loader2 } from 'lucide-react';
 
 import { getSafeNextPath } from '../../../lib/auth-redirect';
 import { createSupabaseBrowserClient } from '../../../lib/supabase/client';
@@ -65,93 +67,146 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-4 py-12">
-      <section className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-        <div className="mb-8">
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">Big Eye</p>
-          <h1 className="mt-3 text-3xl font-semibold text-slate-950">
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#080a0f] px-4 py-12">
+      {/* Cyan/Blue ambient glow */}
+      <div className="pointer-events-none absolute -top-40 -right-40 h-96 w-96 rounded-full bg-cyan-600/10 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-teal-600/10 blur-3xl" />
+
+      <section className="relative w-full max-w-[420px] rounded-2xl border border-[#1a2233] bg-[#0c1018] p-8 shadow-card backdrop-blur-sm sm:p-10">
+        <div className="mb-6 flex flex-col items-center text-center">
+          <div className="relative mb-2 flex items-center justify-center">
+            <Image
+              alt="Big Eye Logo"
+              className="h-28 w-auto object-contain drop-shadow-[0_0_25px_rgba(6,182,212,0.35)]"
+              height={140}
+              priority
+              src="/logo-full.png"
+              width={160}
+            />
+          </div>
+          <h1 className="mt-2 text-2xl font-black tracking-tight text-white sm:text-3xl">
             {isSignup ? 'Crie sua conta' : 'Entre na sua conta'}
           </h1>
-          <p className="mt-2 text-sm text-slate-600">
-            Consulte dados com créditos e acompanhe cada resultado.
-          </p>
         </div>
 
         <form className="space-y-4" onSubmit={handleSubmit}>
           {isSignup ? (
-            <label className="block text-sm font-medium text-slate-700" htmlFor="name">
-              Nome
-              <input
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                id="name"
-                name="name"
-                onChange={(event) => setName(event.target.value)}
-                required
-                type="text"
-                value={name}
-              />
-            </label>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300" htmlFor="name">
+                Nome
+              </label>
+              <div className="relative mt-1.5">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-500">
+                  <User className="h-4 w-4" />
+                </div>
+                <input
+                  className="w-full rounded-xl border border-[#1e293f] bg-[#101522] py-3 pr-3 pl-10 text-xs text-white placeholder:text-slate-500 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                  id="name"
+                  name="name"
+                  onChange={(event) => setName(event.target.value)}
+                  placeholder="Seu nome completo"
+                  required
+                  type="text"
+                  value={name}
+                />
+              </div>
+            </div>
           ) : null}
 
-          <label className="block text-sm font-medium text-slate-700" htmlFor="email">
-            Email
-            <input
-              autoComplete="email"
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              id="email"
-              name="email"
-              onChange={(event) => setEmail(event.target.value)}
-              required
-              type="email"
-              value={email}
-            />
-          </label>
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300" htmlFor="email">
+              Email
+            </label>
+            <div className="relative mt-1.5">
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-500">
+                <Mail className="h-4 w-4" />
+              </div>
+              <input
+                autoComplete="email"
+                className="w-full rounded-xl border border-[#1e293f] bg-[#101522] py-3 pr-3 pl-10 text-xs text-white placeholder:text-slate-500 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                id="email"
+                name="email"
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="operador@bigeye.intel"
+                required
+                type="email"
+                value={email}
+              />
+            </div>
+          </div>
 
-          <label className="block text-sm font-medium text-slate-700" htmlFor="password">
-            Senha
-            <input
-              autoComplete={isSignup ? 'new-password' : 'current-password'}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              id="password"
-              minLength={6}
-              name="password"
-              onChange={(event) => setPassword(event.target.value)}
-              required
-              type="password"
-              value={password}
-            />
-          </label>
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300" htmlFor="password">
+              Senha
+            </label>
+            <div className="relative mt-1.5">
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-500">
+                <Lock className="h-4 w-4" />
+              </div>
+              <input
+                autoComplete={isSignup ? 'new-password' : 'current-password'}
+                className="w-full rounded-xl border border-[#1e293f] bg-[#101522] py-3 pr-3 pl-10 text-xs text-white placeholder:text-slate-500 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                id="password"
+                minLength={6}
+                name="password"
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="••••••••"
+                required
+                type="password"
+                value={password}
+              />
+            </div>
+          </div>
 
           {error ? (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
-              {error}
-            </p>
+            <div className="flex items-start gap-2.5 rounded-xl border border-red-900/60 bg-red-950/40 p-3 text-xs text-red-300" role="alert">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
+              <span>{error}</span>
+            </div>
           ) : null}
+
           {notice ? (
-            <p
-              className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700"
+            <div
+              className="flex items-start gap-2.5 rounded-xl border border-emerald-900/60 bg-emerald-950/40 p-3 text-xs text-emerald-300"
               role="status"
             >
-              {notice}
-            </p>
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+              <span>{notice}</span>
+            </div>
           ) : null}
 
           <button
-            className="w-full rounded-lg bg-blue-600 px-4 py-2.5 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="group relative flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-600 py-3.5 px-4 font-mono text-xs font-bold text-white shadow-glow transition-all hover:from-cyan-500 hover:to-teal-500 disabled:cursor-not-allowed disabled:opacity-60"
             disabled={isSubmitting}
             type="submit"
           >
-            {isSubmitting ? 'Aguarde...' : isSignup ? 'Criar conta' : 'Entrar'}
+            {isSubmitting ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Aguarde...</span>
+              </>
+            ) : (
+              <>
+                <span>{isSignup ? 'Criar conta' : 'Entrar'}</span>
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              </>
+            )}
           </button>
         </form>
 
-        <button
-          className="mt-6 w-full text-sm font-medium text-blue-700 hover:text-blue-800"
-          onClick={toggleMode}
-          type="button"
-        >
-          {isSignup ? 'Já tenho uma conta' : 'Ainda não tenho conta'}
-        </button>
+        <div className="mt-6 border-t border-[#1a2233] pt-5 text-center">
+          <button
+            className="text-xs font-medium text-slate-400 transition hover:text-cyan-400"
+            onClick={toggleMode}
+            type="button"
+          >
+            {isSignup ? (
+              <>Já tem credencial? <strong className="font-semibold text-cyan-400 underline">Fazer login</strong></>
+            ) : (
+              <>Novo? <strong className="font-semibold text-cyan-400 underline">Criar conta</strong></>
+            )}
+          </button>
+        </div>
       </section>
     </main>
   );

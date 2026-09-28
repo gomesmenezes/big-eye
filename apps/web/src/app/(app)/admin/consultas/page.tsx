@@ -116,7 +116,7 @@ export default function AdminQueriesPage() {
           </select>
         </label>
         <label className="text-sm font-medium text-slate-700">
-          Módulo
+          Chamadas/Consultas
           <input className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm" onChange={(event) => setModuleSlug(event.target.value)} placeholder="cpf-basico" value={moduleSlug} />
         </label>
         <label className="text-sm font-medium text-slate-700">

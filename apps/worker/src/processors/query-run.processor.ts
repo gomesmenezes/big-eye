@@ -19,7 +19,7 @@ class InvalidProviderResultError extends Error {
   readonly code = 'QUERY_FAILED' as const;
 
   constructor() {
-    super('A resposta do provedor não corresponde ao contrato do módulo.');
+    super('A resposta do provedor não corresponde ao contrato de Chamadas/Consultas.');
     this.name = 'InvalidProviderResultError';
   }
 }

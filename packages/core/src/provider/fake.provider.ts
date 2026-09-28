@@ -74,7 +74,7 @@ function buildResult(request: ProviderRequest): unknown {
         fontes: ['fake-provider'],
       };
     default:
-      throw new ProviderError('PROVIDER_UNAVAILABLE', 'Módulo indisponível no provedor.');
+      throw new ProviderError('PROVIDER_UNAVAILABLE', 'Chamada/Consulta indisponível no provedor.');
   }
 }
 
@@ -91,7 +91,7 @@ export class FakeProvider implements ProviderClient {
     const contract = getModule(request.module);
 
     if (!contract?.implemented) {
-      throw new ProviderError('PROVIDER_UNAVAILABLE', 'Módulo indisponível no provedor.');
+      throw new ProviderError('PROVIDER_UNAVAILABLE', 'Chamada/Consulta indisponível no provedor.');
     }
 
     const stableKey = idempotencyKey(request);
