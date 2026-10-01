@@ -1,7 +1,5 @@
 'use client';
 
-import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
 import {
   UserCheck,
   Car,
@@ -10,18 +8,13 @@ import {
   Coins,
   Search,
   Filter,
-  Shield,
   Fingerprint,
-  Mail,
-  MapPin,
-  Camera,
-  CreditCard,
-  Cpu,
-  ArrowRight,
   Zap,
   Clock,
   ChevronRight,
 } from 'lucide-react';
+import Link from 'next/link';
+import { useEffect, useMemo, useState } from 'react';
 
 import type { MeDTOType } from '@big-eye/contracts';
 
@@ -154,7 +147,7 @@ export default function CatalogPage() {
         <div>
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-cyan-400" />
-            <span className="font-mono text-[10px] font-bold tracking-widest text-cyan-400 uppercase">
+            <span className="text-[10px] font-bold tracking-widest text-cyan-400 uppercase">
               Matriz de Chamadas/Consultas & Conectores
             </span>
           </div>
@@ -171,7 +164,7 @@ export default function CatalogPage() {
             <Coins className="h-4 w-4 text-cyan-400" />
             <div className="text-xs">
               <span className="text-slate-400">Saldo: </span>
-              <strong className="font-mono font-bold text-white">{me.balance} créditos</strong>
+              <strong className="font-bold text-white">{me.balance} créditos</strong>
             </div>
             <Link
               className="ml-2 rounded-lg bg-cyan-950/80 border border-cyan-800/40 px-2.5 py-1 text-[11px] font-bold text-cyan-300 hover:bg-cyan-900/60"
@@ -201,7 +194,7 @@ export default function CatalogPage() {
         {/* Category Pills */}
         <div className="flex flex-wrap gap-1.5">
           <button
-            className={`rounded-xl px-3.5 py-2.5 font-mono text-[11px] font-bold transition ${
+            className={`rounded-xl px-3.5 py-2.5 text-[11px] font-bold transition ${
               selectedCategory === 'all'
                 ? 'border border-cyan-500/50 bg-cyan-950/70 text-white shadow-glow'
                 : 'border border-[#1a2233] bg-[#0c1018] text-slate-400 hover:bg-[#121824] hover:text-white'
@@ -215,7 +208,7 @@ export default function CatalogPage() {
             const count = modules.filter((m) => m.categoria === cat).length;
             return (
               <button
-                className={`rounded-xl px-3.5 py-2.5 font-mono text-[11px] font-bold transition ${
+                className={`rounded-xl px-3.5 py-2.5 text-[11px] font-bold transition ${
                   selectedCategory === cat
                     ? 'border border-cyan-500/50 bg-cyan-950/70 text-white shadow-glow'
                     : 'border border-[#1a2233] bg-[#0c1018] text-slate-400 hover:bg-[#121824] hover:text-white'
@@ -240,7 +233,7 @@ export default function CatalogPage() {
             <p className="mt-3 text-xs font-bold text-white">Nenhuma Chamada/Consulta encontrada</p>
             <p className="mt-1 text-[11px] text-slate-500">Tente buscar por outro termo.</p>
             <button
-              className="mt-4 rounded-xl border border-[#232f48] bg-[#121826] px-4 py-2 font-mono text-xs font-semibold text-slate-300 hover:text-white"
+              className="mt-4 rounded-xl border border-[#232f48] bg-[#121826] px-4 py-2 text-xs font-semibold text-slate-300 hover:text-white"
               onClick={() => {
                 setSearchQuery('');
                 setSelectedCategory('all');
@@ -260,10 +253,10 @@ export default function CatalogPage() {
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-cyan-950/70 text-cyan-400 border border-cyan-800/40">
                     <CategoryIcon className="h-4 w-4" />
                   </div>
-                  <h2 className="font-mono text-xs font-bold tracking-wider text-slate-200 uppercase">
+                  <h2 className="text-xs font-bold tracking-wider text-slate-200 uppercase">
                     {categoryLabels[category]}
                   </h2>
-                  <span className="rounded-full border border-[#1a2436] bg-[#0f1422] px-2 py-0.5 font-mono text-[9px] font-bold text-slate-400">
+                  <span className="rounded-full border border-[#1a2436] bg-[#0f1422] px-2 py-0.5 text-[9px] font-bold text-slate-400">
                     {categoryModules.length}
                   </span>
                 </div>
@@ -279,12 +272,12 @@ export default function CatalogPage() {
                       >
                         <div>
                           <div className="flex items-start justify-between gap-3">
-                            <span className="font-mono text-xs font-bold text-cyan-400">
+                            <span className="text-xs font-bold text-cyan-400">
                               {module.slug}
                             </span>
 
                             <div className="flex items-center gap-1.5">
-                              <span className="inline-flex items-center gap-1 rounded-full border border-cyan-900/50 bg-cyan-950/40 px-2 py-0.5 font-mono text-[10px] font-bold text-cyan-300">
+                              <span className="inline-flex items-center gap-1 rounded-full border border-cyan-900/50 bg-cyan-950/40 px-2 py-0.5 text-[10px] font-bold text-cyan-300">
                                 <Coins className="h-3 w-3 text-cyan-400" />
                                 {module.custoCreditos} cr
                               </span>
@@ -309,7 +302,7 @@ export default function CatalogPage() {
                               </span>
                             ))}
 
-                            <span className="inline-flex items-center gap-1 rounded-md border border-cyan-950 bg-cyan-950/30 px-2 py-0.5 font-mono text-[10px] font-medium text-cyan-300">
+                            <span className="inline-flex items-center gap-1 rounded-md border border-cyan-950 bg-cyan-950/30 px-2 py-0.5 text-[10px] font-medium text-cyan-300">
                               {module.mode === 'async' ? (
                                 <>
                                   <Clock className="h-3 w-3" />

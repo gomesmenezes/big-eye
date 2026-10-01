@@ -36,7 +36,7 @@ describe('HttpExceptionFilter', () => {
       message: 'Provedor temporariamente indisponível.',
       statusCode: 502,
     });
-    expect(reportError).toHaveBeenCalledWith('POST', 502);
+    expect(reportError).toHaveBeenCalledWith('POST', 502, undefined, 'HttpException', undefined);
     reportError.mockRestore();
   });
 });

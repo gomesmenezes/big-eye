@@ -1,10 +1,10 @@
 'use client';
 
+import { ArrowLeft } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
-import { ShieldAlert, ArrowLeft } from 'lucide-react';
 
 import { statusClass, statusLabel } from './admin-types';
 
@@ -33,7 +33,7 @@ export function AdminShell({ children }: Readonly<{ children: ReactNode }>) {
             </Link>
             <div className="mt-2 flex items-center gap-2">
               <span className="flex h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#06b6d4]" />
-              <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-cyan-400">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-cyan-400">
                 Operações de Backoffice
               </p>
             </div>
@@ -58,7 +58,7 @@ export function AdminShell({ children }: Readonly<{ children: ReactNode }>) {
 
               return (
                 <Link
-                  className={`whitespace-nowrap rounded-xl px-3.5 py-1.5 font-mono text-xs font-bold tracking-wide transition-all ${
+                  className={`whitespace-nowrap rounded-xl px-3.5 py-1.5 text-xs font-bold tracking-wide transition-all ${
                     isActive
                       ? 'bg-gradient-to-r from-cyan-600 to-teal-600 text-white shadow-glow'
                       : 'text-slate-400 hover:bg-[#121826] hover:text-white'

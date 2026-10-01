@@ -16,7 +16,7 @@ type ErrorResponse = {
   statusCode: number;
 };
 
-type RequestContext = { method: string };
+type RequestContext = { method: string; routeOptions?: { url?: string } };
 type ReplyContext = { status: (statusCode: number) => { send: (body: ErrorResponse) => unknown } };
 
 const safeErrors: Record<number, { code: string; message: string }> = {
@@ -111,7 +111,18 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const body: ErrorResponse = { ...error, statusCode };
 
     if (statusCode >= HttpStatus.INTERNAL_SERVER_ERROR) {
-      this.logger.reportHttpException(request.method, statusCode);
+      const errorCode =
+        typeof exception === 'object' && exception !== null && 'code' in exception &&
+        typeof exception.code === 'string' && /^P\d{4}$/u.test(exception.code)
+          ? exception.code
+          : undefined;
+      this.logger.reportHttpException(
+        request.method,
+        statusCode,
+        request.routeOptions?.url,
+        exception instanceof Error ? exception.constructor.name : typeof exception,
+        errorCode,
+      );
     }
 
     void reply.status(statusCode).send(body);

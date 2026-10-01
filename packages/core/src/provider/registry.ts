@@ -1,6 +1,6 @@
 import { AthenasProvider, DEFAULT_ATHENAS_API_BASE_URL } from './athenas.provider.js';
 import { FakeProvider } from './fake.provider.js';
-import type { ProviderClient } from './provider.client.js';
+import { ProviderError, type ProviderClient } from './provider.client.js';
 
 export function getProviderClient(): ProviderClient {
   switch (process.env.PROVIDER_MODE ?? 'fake') {
@@ -20,4 +20,21 @@ export function getProviderClient(): ProviderClient {
     default:
       throw new Error('PROVIDER_MODE inválido.');
   }
+}
+
+export async function getAthenasStatus(): Promise<unknown> {
+  if ((process.env.PROVIDER_MODE ?? 'fake') !== 'upstream') {
+    return { status: 'disabled' };
+  }
+
+  const apiKey = process.env.ATHENAS_API_KEY?.trim();
+  if (!apiKey) {
+    throw new ProviderError('PROVIDER_UNAVAILABLE', 'A integração Athenas não está configurada.');
+  }
+
+  const provider = new AthenasProvider({
+    apiKey,
+    baseUrl: process.env.ATHENAS_API_BASE_URL ?? DEFAULT_ATHENAS_API_BASE_URL,
+  });
+  return provider.status();
 }

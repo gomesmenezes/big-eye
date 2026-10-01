@@ -48,9 +48,9 @@ Esse comando carrega o `.env` da raiz e inicia os três serviços. Use `Ctrl+C` 
 
 A API fica em `http://localhost:3001`, o web em `http://localhost:3000`, a documentação OpenAPI em `/docs` e os endpoints de saúde em `/health` e `/ready`.
 
-O `FakeProvider` permite testar `cpf-basico` e `dossie-360` sem integração upstream. O pagamento fake usa `FAKE_PAYMENT_SECRET` para validar o header `x-fake-signature` dos webhooks.
+O `FakeProvider` permite exercitar os módulos habilitados sem integração upstream; `cpf-basico` e `dossie-360` retornam amostras específicas e os demais retornam um payload simulado genérico. O pagamento fake usa `FAKE_PAYMENT_SECRET` para validar o header `x-fake-signature` dos webhooks.
 
-Para consultar a Athenas, configure `PROVIDER_MODE=upstream` e `ATHENAS_API_KEY` na API e no worker. A URL padrão é `https://api.athenasbuscas.com/api/ext/v1` e pode ser substituída por `ATHENAS_API_BASE_URL`. A chave é exclusivamente server-side; não a configure no projeto web. A integração ativa `cpf-basico` via `/cpf/:cpf` e `dossie-360` via `/dossie-360/:cpf`.
+Para consultar a Athenas, configure `PROVIDER_MODE=upstream` e `ATHENAS_API_KEY` na API e no worker. A URL padrão é `https://api.athenasbuscas.com/api/ext/v1` e pode ser substituída por `ATHENAS_API_BASE_URL`. A chave é exclusivamente server-side; não a configure no projeto web. O catálogo habilita os endpoints de dados documentados pela Athenas que têm módulos correspondentes, com os mapeamentos e parâmetros em [`docs/runbook.md`](docs/runbook.md). O status operacional fica em `GET /athenas/status` para usuários autenticados e em `GET /admin/providers/athenas/status` para admins; nenhuma das rotas consome créditos de consulta. Resultados de logins vazados removem senhas e campos de token, segredo ou cookie antes de serem armazenados ou exibidos.
 
 ## Comandos úteis
 

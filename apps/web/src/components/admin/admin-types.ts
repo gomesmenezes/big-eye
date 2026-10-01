@@ -173,16 +173,16 @@ export function statusLabel(status: string | undefined): string {
 
 export function statusClass(status: string | undefined): string {
   const classes: Record<string, string> = {
-    active: 'bg-emerald-50 text-emerald-700',
-    suspended: 'bg-red-50 text-red-700',
-    pending: 'bg-amber-50 text-amber-700',
-    running: 'bg-amber-50 text-amber-800',
-    succeeded: 'bg-emerald-50 text-emerald-700',
-    failed: 'bg-red-50 text-red-700',
-    refunded: 'bg-amber-50 text-amber-800',
-    paid: 'bg-emerald-50 text-emerald-700',
-    expired: 'bg-slate-100 text-slate-600',
+    active: 'bg-emerald-950/60 text-emerald-400 border border-emerald-800/40',
+    suspended: 'bg-red-950/60 text-red-400 border border-red-800/40',
+    pending: 'bg-amber-950/60 text-amber-300 border border-amber-800/40',
+    running: 'bg-cyan-950/60 text-cyan-300 border border-cyan-800/40 animate-pulse',
+    succeeded: 'bg-emerald-950/60 text-emerald-300 border border-emerald-800/40',
+    failed: 'bg-red-950/60 text-red-400 border border-red-800/40',
+    refunded: 'bg-sky-950/60 text-sky-300 border border-sky-800/40',
+    paid: 'bg-emerald-950/60 text-emerald-300 border border-emerald-800/40',
+    expired: 'bg-slate-900/60 text-slate-400 border border-slate-700/40',
   };
 
-  return classes[status ?? ''] ?? 'bg-slate-100 text-slate-600';
+  return classes[status ?? ''] ?? 'bg-slate-900/60 text-slate-400 border border-slate-700/40';
 }

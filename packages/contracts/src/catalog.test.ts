@@ -18,14 +18,37 @@ describe('catálogo de Chamadas/Consultas', () => {
     }
   });
 
-  it('tem as quatro categorias e as duas Chamadas/Consultas da fase 1 implementadas', () => {
+  it('tem as quatro categorias e habilita os módulos cobertos pela integração Athenas', () => {
     expect(new Set(MODULES.map((module) => module.categoria))).toEqual(
       new Set(['pessoais', 'veiculares', 'empresariais', 'web']),
     );
-    expect(MODULES).toHaveLength(30);
+    expect(MODULES).toHaveLength(42);
     expect(MODULES.filter((module) => module.implemented).map((module) => module.slug)).toEqual([
       'cpf-basico',
       'dossie-360',
+      'cpf-cadsus',
+      'cpf-intelligent',
+      'cpf-obito',
+      'cpf-parentes',
+      'cpf-score',
+      'cpf-detran',
+      'sptrans-cpf',
+      'cpf-rais',
+      'pis-pasep',
+      'irpf-cpf',
+      'placa-basico',
+      'chassi-consulta',
+      'renavam-consulta',
+      'cnpj-basico',
+      'cnpj-funcionarios',
+      'email-reverso',
+      'telefone-reverso',
+      'nome-abreviado',
+      'nome-completo',
+      'endereco-consulta',
+      'dominio-whois',
+      'ip-geolocalizacao',
+      'logins-vazados',
     ]);
   });
 

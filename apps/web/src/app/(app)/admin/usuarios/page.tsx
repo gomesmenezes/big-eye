@@ -15,6 +15,7 @@ import {
   type AdminUser,
   type AdminUserDetail,
 } from '../../../../components/admin/admin-types';
+import { OrbLoader } from '../../../../components/orb-loader';
 import { apiFetch } from '../../../../lib/api';
 
 export default function AdminUsersPage() {
@@ -91,13 +92,13 @@ export default function AdminUsersPage() {
       <form className="flex flex-col gap-3 sm:flex-row" onSubmit={submitSearch}>
         <label className="sr-only" htmlFor="user-search">Buscar usuário</label>
         <input
-          className="min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
+          className="min-w-0 flex-1 rounded-xl border border-[#1c2436] bg-[#0d121c] px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none transition focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20"
           id="user-search"
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Buscar por email ou nome"
           value={search}
         />
-        <button className="rounded-xl bg-teal-800 px-5 py-3 text-sm font-semibold text-white hover:bg-teal-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700" type="submit">
+        <button className="rounded-xl bg-gradient-to-r from-cyan-600 to-teal-600 px-5 py-3 text-xs font-bold text-white shadow-glow transition hover:from-cyan-500 hover:to-teal-500" type="submit">
           Buscar
         </button>
       </form>
@@ -105,17 +106,20 @@ export default function AdminUsersPage() {
       {error ? <div className="mt-5"><AdminError message={error} /></div> : null}
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,0.8fr)]">
-        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-100 px-5 py-4">
-            <h3 className="font-semibold text-slate-950">Contas cadastradas</h3>
+        <section className="overflow-hidden rounded-2xl border border-[#1c2436] bg-[#0d121c] shadow-card">
+          <div className="border-b border-[#1c2436] px-5 py-4">
+            <div className="flex items-center gap-2">
+              <span className="h-4 w-1 rounded-full bg-gradient-to-b from-cyan-400 to-teal-400" />
+              <h3 className="font-bold text-white">Contas cadastradas</h3>
+            </div>
           </div>
           {isLoading ? <div className="p-5"><AdminLoading /></div> : null}
-          {!isLoading && users.length === 0 ? <p className="p-5 text-sm text-slate-500">Nenhum usuário encontrado.</p> : null}
+          {!isLoading && users.length === 0 ? <p className="p-5 text-xs text-slate-500">Nenhum usuário encontrado.</p> : null}
           {!isLoading && users.length > 0 ? (
             <>
             <div className="overflow-x-auto">
               <table className="min-w-full text-left text-sm">
-                <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                <thead className="border-b border-[#1c2436] bg-[#111622] text-xs uppercase tracking-wider text-slate-400">
                   <tr>
                     <th className="px-5 py-3 font-semibold" scope="col">Usuário</th>
                     <th className="px-5 py-3 font-semibold" scope="col">Saldo</th>
@@ -123,17 +127,17 @@ export default function AdminUsersPage() {
                     <th className="px-5 py-3" scope="col"><span className="sr-only">Ações</span></th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-[#1c2436]">
                   {users.map((user) => (
-                    <tr className={selected?.id === user.id ? 'bg-teal-50/50' : undefined} key={user.id}>
+                    <tr className={`transition ${selected?.id === user.id ? 'bg-cyan-950/30' : 'hover:bg-[#121824]'}`} key={user.id}>
                       <td className="px-5 py-4">
-                        <p className="font-medium text-slate-900">{getText(user.name, user.email)}</p>
-                        <p className="mt-1 text-xs text-slate-500">{user.email}</p>
+                        <p className="font-bold text-white">{getText(user.name, user.email)}</p>
+                        <p className="mt-1 text-xs text-slate-400">{user.email}</p>
                       </td>
-                      <td className="px-5 py-4 font-medium text-slate-900">{getNumber(user.balance)}</td>
+                      <td className="px-5 py-4 font-medium text-slate-200">{getNumber(user.balance)}</td>
                       <td className="px-5 py-4"><AdminStatus status={user.status} /></td>
                       <td className="px-5 py-4 text-right">
-                        <button className="text-sm font-semibold text-teal-800 hover:text-teal-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700" onClick={() => void openUser(user.id)} type="button">
+                        <button className="text-xs font-bold text-cyan-400 transition hover:text-cyan-300" onClick={() => void openUser(user.id)} type="button">
                           Abrir
                         </button>
                       </td>
@@ -142,7 +146,7 @@ export default function AdminUsersPage() {
                 </tbody>
               </table>
             </div>
-            {nextCursor ? <div className="border-t border-slate-100 px-5 py-4 text-center"><button className="text-sm font-semibold text-teal-800 hover:text-teal-900 disabled:cursor-wait disabled:opacity-60" disabled={isLoadingMore} onClick={() => void loadUsers(search, nextCursor, true)} type="button">{isLoadingMore ? 'Carregando...' : 'Carregar mais'}</button></div> : null}
+            {nextCursor ? <div className="border-t border-[#1c2436] px-5 py-4 text-center"><button className="inline-flex items-center gap-1.5 text-xs font-bold text-cyan-400 transition hover:text-cyan-300 disabled:cursor-wait disabled:opacity-60" disabled={isLoadingMore} onClick={() => void loadUsers(search, nextCursor, true)} type="button">{isLoadingMore ? (<><OrbLoader color="#22d3ee" size={20} state="working" /><span>Carregando...</span></>) : 'Carregar mais'}</button></div> : null}
             </>
           ) : null}
         </section>
@@ -176,11 +180,11 @@ function UserPanel({
   const [actionError, setActionError] = useState<string>();
 
   if (isLoading) {
-    return <aside className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><AdminLoading /></aside>;
+    return <aside className="rounded-2xl border border-[#1c2436] bg-[#0d121c] p-5 shadow-card"><AdminLoading /></aside>;
   }
 
   if (!user) {
-    return <aside className="flex min-h-64 items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">Selecione um usuário para ver os detalhes.</aside>;
+    return <aside className="flex min-h-64 items-center justify-center rounded-2xl border border-dashed border-[#1c2436] bg-[#0d121c] p-6 text-center text-xs text-slate-500">Selecione um usuário para ver os detalhes.</aside>;
   }
 
   const currentUser = user;
@@ -241,28 +245,28 @@ function UserPanel({
   }
 
   return (
-    <aside className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <aside className="rounded-2xl border border-[#1c2436] bg-[#0d121c] p-5 shadow-card">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Detalhes da conta</p>
-          <h3 className="mt-1 text-xl font-semibold text-slate-950">{getText(user.name, user.email)}</h3>
-          <p className="mt-1 break-all text-sm text-slate-500">{user.email}</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Detalhes da conta</p>
+          <h3 className="mt-1 text-xl font-bold text-white">{getText(user.name, user.email)}</h3>
+          <p className="mt-1 break-all text-xs text-slate-400">{user.email}</p>
         </div>
         <AdminStatus status={user.status} />
       </div>
 
-      <div className="mt-5 rounded-xl bg-slate-50 p-4">
-        <p className="text-sm font-medium text-slate-500">Saldo atual</p>
-        <p className="mt-1 text-3xl font-semibold text-slate-950">{getBalance(user)}</p>
-        <p className="mt-1 font-mono text-xs text-slate-500">ID: {user.id}</p>
+      <div className="mt-5 rounded-xl border border-[#1c2436] bg-[#121824] p-4">
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Saldo atual</p>
+        <p className="mt-1 text-3xl font-black text-white">{getBalance(user)}</p>
+        <p className="mt-1 text-[11px] text-slate-500">ID: {user.id}</p>
       </div>
 
-      <form className="mt-6 space-y-3 border-t border-slate-100 pt-5" onSubmit={(event) => void adjustWallet(event)}>
-        <h4 className="font-semibold text-slate-950">Ajustar saldo</h4>
-        <label className="block text-sm font-medium text-slate-700" htmlFor="wallet-amount">
+      <form className="mt-6 space-y-3 border-t border-[#1c2436] pt-5" onSubmit={(event) => void adjustWallet(event)}>
+        <h4 className="font-bold text-white text-sm">Ajustar saldo</h4>
+        <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400" htmlFor="wallet-amount">
           Créditos (+/-)
           <input
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
+            className="mt-1.5 w-full rounded-xl border border-[#1c2436] bg-[#121824] px-3.5 py-2.5 text-xs text-white placeholder:text-slate-500 outline-none transition focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20"
             id="wallet-amount"
             inputMode="numeric"
             onChange={(event) => setAmount(event.target.value)}
@@ -270,44 +274,44 @@ function UserPanel({
             value={amount}
           />
         </label>
-        <label className="block text-sm font-medium text-slate-700" htmlFor="wallet-reason">
+        <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400" htmlFor="wallet-reason">
           Motivo
           <textarea
-            className="mt-1 min-h-20 w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
+            className="mt-1.5 min-h-20 w-full rounded-xl border border-[#1c2436] bg-[#121824] px-3.5 py-2.5 text-xs text-white placeholder:text-slate-500 outline-none transition focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20"
             id="wallet-reason"
             onChange={(event) => setReason(event.target.value)}
             placeholder="Descreva por que o saldo foi ajustado"
             value={reason}
           />
         </label>
-        <button className="w-full rounded-lg bg-teal-800 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:opacity-60" disabled={isSaving} type="submit">
-          {isSaving ? 'Salvando...' : 'Ajustar saldo'}
+        <button className="inline-flex items-center justify-center gap-1.5 w-full rounded-xl bg-gradient-to-r from-cyan-600 to-teal-600 px-4 py-2.5 text-xs font-bold text-white shadow-glow transition hover:from-cyan-500 hover:to-teal-500 disabled:opacity-60" disabled={isSaving} type="submit">
+          {isSaving ? (<><OrbLoader color="#ffffff" size={20} state="working" /><span>Salvando...</span></>) : 'Ajustar saldo'}
         </button>
       </form>
 
-      <button className="mt-3 w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60" disabled={isSaving} onClick={() => void toggleStatus()} type="button">
-        {user.status === 'suspended' ? 'Reativar usuário' : 'Suspender usuário'}
+      <button className="mt-3 inline-flex items-center justify-center gap-1.5 w-full rounded-xl border border-[#1c2436] bg-[#121824] px-4 py-2.5 text-xs font-bold text-slate-300 transition hover:bg-[#1a2233] hover:text-white disabled:opacity-60" disabled={isSaving} onClick={() => void toggleStatus()} type="button">
+        {isSaving ? (<><OrbLoader color="#94a3b8" size={20} state="working" /><span>Processando...</span></>) : (user.status === 'suspended' ? 'Reativar usuário' : 'Suspender usuário')}
       </button>
 
-      {message ? <p className="mt-4 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800" role="status">{message}</p> : null}
-      {actionError ? <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">{actionError}</p> : null}
+      {message ? <p className="mt-4 rounded-xl border border-emerald-800/60 bg-emerald-950/40 px-3 py-2 text-xs text-emerald-300" role="status">{message}</p> : null}
+      {actionError ? <p className="mt-4 rounded-xl border border-red-900/60 bg-red-950/40 px-3 py-2 text-xs text-red-300" role="alert">{actionError}</p> : null}
 
-      <div className="mt-6 border-t border-slate-100 pt-5">
+      <div className="mt-6 border-t border-[#1c2436] pt-5">
         <div className="flex items-center justify-between gap-3">
-          <h4 className="font-semibold text-slate-950">Extrato</h4>
-          <span className="text-xs text-slate-500">{transactions.length} lançamento{transactions.length === 1 ? '' : 's'}</span>
+          <h4 className="font-bold text-white text-sm">Extrato</h4>
+          <span className="text-xs text-slate-400">{transactions.length} lançamento{transactions.length === 1 ? '' : 's'}</span>
         </div>
-        {transactions.length === 0 ? <p className="mt-3 text-sm text-slate-500">Nenhum lançamento encontrado.</p> : (
-          <ul className="mt-3 divide-y divide-slate-100">
+        {transactions.length === 0 ? <p className="mt-3 text-xs text-slate-500">Nenhum lançamento encontrado.</p> : (
+          <ul className="mt-3 divide-y divide-[#1c2436]">
             {transactions.map((transaction) => (
               <li className="py-3" key={transaction.id}>
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-sm font-medium text-slate-800">{transaction.description}</p>
-                    <p className="mt-1 text-xs text-slate-500">{formatDate(transaction.createdAt)}</p>
+                    <p className="text-xs font-medium text-slate-200">{transaction.description}</p>
+                    <p className="mt-1 text-[11px] text-slate-400">{formatDate(transaction.createdAt)}</p>
                   </div>
-                  <span className={`text-sm font-semibold ${transaction.amount >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
-                    {transaction.amount >= 0 ? '+' : ''}{transaction.amount}
+                  <span className={`text-xs font-bold ${transaction.amount >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {transaction.amount > 0 ? '+' : ''}{transaction.amount}
                   </span>
                 </div>
               </li>

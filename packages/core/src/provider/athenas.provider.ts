@@ -8,7 +8,9 @@ import { ProviderError } from './provider.client.js';
 export const DEFAULT_ATHENAS_API_BASE_URL = 'https://api.athenasbuscas.com/api/ext/v1';
 
 const CPF_TIMEOUT_MS = 30_000;
+const DEFAULT_TIMEOUT_MS = 15_000;
 const DOSSIER_TIMEOUT_MS = 60_000;
+const STATUS_TIMEOUT_MS = 15_000;
 
 type AthenasRoute = {
   endpoint: string;
@@ -25,21 +27,255 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function routeFor(request: ProviderRequest): AthenasRoute {
-  const cpf = request.input.cpf;
-
-  if (typeof cpf !== 'string' || !/^\d{11}$/u.test(cpf)) {
+function requiredString(input: Record<string, unknown>, key: string): string {
+  const value = input[key];
+  if (typeof value !== 'string' || value.trim().length === 0) {
     throw new ProviderError('QUERY_FAILED', 'A entrada da consulta não é válida.');
   }
 
+  return value.trim();
+}
+
+function requiredCpf(input: Record<string, unknown>): string {
+  const cpf = requiredString(input, 'cpf');
+  if (!/^\d{11}$/u.test(cpf)) {
+    throw new ProviderError('QUERY_FAILED', 'A entrada da consulta não é válida.');
+  }
+
+  return cpf;
+}
+
+function queryValue(value: unknown): string {
+  if (typeof value === 'string' && value.trim().length > 0) {
+    return value;
+  }
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return String(value);
+  }
+
+  if (typeof value === 'boolean') {
+    return String(value);
+  }
+
+  throw new ProviderError('QUERY_FAILED', 'A entrada da consulta não é válida.');
+}
+
+function queryEndpoint(
+  path: string,
+  input: Record<string, unknown>,
+  requiredKey: string,
+  optionalKeys: readonly string[] = [],
+): string {
+  const params = new URLSearchParams();
+  params.set(requiredKey, requiredString(input, requiredKey));
+
+  for (const key of optionalKeys) {
+    const value = input[key];
+    if (value !== undefined && value !== null) {
+      params.set(key, queryValue(value));
+    }
+  }
+
+  return `${path}?${params.toString()}`;
+}
+
+function optionalQueryEndpoint(
+  path: string,
+  input: Record<string, unknown>,
+  optionalKeys: readonly string[],
+): string {
+  const params = new URLSearchParams();
+
+  for (const key of optionalKeys) {
+    const value = input[key];
+    if (value !== undefined && value !== null) {
+      params.set(key, queryValue(value));
+    }
+  }
+
+  const query = params.toString();
+  return query ? `${path}?${query}` : path;
+}
+
+function routeFor(request: ProviderRequest): AthenasRoute {
   switch (request.module) {
-    case 'cpf-basico':
+    case 'cpf-basico': {
+      const cpf = requiredCpf(request.input);
       return { endpoint: `/cpf/${encodeURIComponent(cpf)}`, timeoutMs: CPF_TIMEOUT_MS };
-    case 'dossie-360':
+    }
+    case 'dossie-360': {
+      const cpf = requiredCpf(request.input);
       return { endpoint: `/dossie-360/${encodeURIComponent(cpf)}`, timeoutMs: DOSSIER_TIMEOUT_MS };
+    }
+    case 'cpf-cadsus': {
+      const cpf = requiredCpf(request.input);
+      return { endpoint: `/cadsus/${encodeURIComponent(cpf)}`, timeoutMs: DEFAULT_TIMEOUT_MS };
+    }
+    case 'cpf-intelligent': {
+      const cpf = requiredCpf(request.input);
+      return { endpoint: `/cpf-intelligent/${encodeURIComponent(cpf)}`, timeoutMs: CPF_TIMEOUT_MS };
+    }
+    case 'cpf-obito': {
+      const cpf = requiredCpf(request.input);
+      return { endpoint: `/obito/${encodeURIComponent(cpf)}`, timeoutMs: DEFAULT_TIMEOUT_MS };
+    }
+    case 'cpf-parentes': {
+      const cpf = requiredCpf(request.input);
+      return { endpoint: `/parentes/${encodeURIComponent(cpf)}`, timeoutMs: DEFAULT_TIMEOUT_MS };
+    }
+    case 'cpf-score': {
+      const cpf = requiredCpf(request.input);
+      return { endpoint: `/score/${encodeURIComponent(cpf)}`, timeoutMs: DEFAULT_TIMEOUT_MS };
+    }
+    case 'cpf-detran': {
+      const cpf = requiredCpf(request.input);
+      return { endpoint: `/cpf-detran/${encodeURIComponent(cpf)}`, timeoutMs: DEFAULT_TIMEOUT_MS };
+    }
+    case 'sptrans-cpf': {
+      const cpf = requiredCpf(request.input);
+      return { endpoint: `/sptrans/${encodeURIComponent(cpf)}`, timeoutMs: DEFAULT_TIMEOUT_MS };
+    }
+    case 'email-reverso': {
+      const email = requiredString(request.input, 'email');
+      return { endpoint: `/email/${encodeURIComponent(email)}`, timeoutMs: DEFAULT_TIMEOUT_MS };
+    }
+    case 'telefone-reverso': {
+      const phone = requiredString(request.input, 'phone');
+      return { endpoint: `/phone/${encodeURIComponent(phone)}`, timeoutMs: DEFAULT_TIMEOUT_MS };
+    }
+    case 'nome-abreviado':
+      return {
+        endpoint: queryEndpoint('/name-abbreviated', request.input, 'query', [
+          'page',
+          'limit',
+          'sexo',
+          'uf',
+          'cidade',
+          'cep',
+          'flag_obito',
+          'faixa_renda',
+          'nascimento_exact',
+          'year_from',
+          'year_to',
+        ]),
+        timeoutMs: DEFAULT_TIMEOUT_MS,
+      };
+    case 'nome-completo':
+      return {
+        endpoint: queryEndpoint('/name', request.input, 'query', [
+          'page',
+          'limit',
+          'sexo',
+          'uf',
+          'cidade',
+          'cep',
+          'flag_obito',
+          'faixa_renda',
+          'nascimento_exact',
+          'year_from',
+          'year_to',
+        ]),
+        timeoutMs: DEFAULT_TIMEOUT_MS,
+      };
+    case 'endereco-consulta':
+      return {
+        endpoint: queryEndpoint('/address', request.input, 'query', ['page', 'limit']),
+        timeoutMs: DEFAULT_TIMEOUT_MS,
+      };
+    case 'placa-basico': {
+      const plate = requiredString(request.input, 'plate');
+      return { endpoint: `/plate/${encodeURIComponent(plate)}`, timeoutMs: DEFAULT_TIMEOUT_MS };
+    }
+    case 'chassi-consulta': {
+      const chassi = requiredString(request.input, 'chassi');
+      return { endpoint: `/chassi/${encodeURIComponent(chassi)}`, timeoutMs: DEFAULT_TIMEOUT_MS };
+    }
+    case 'renavam-consulta': {
+      const renavam = requiredString(request.input, 'renavam');
+      return { endpoint: `/renavam/${encodeURIComponent(renavam)}`, timeoutMs: DEFAULT_TIMEOUT_MS };
+    }
+    case 'cnpj-basico': {
+      const cnpj = requiredString(request.input, 'cnpj');
+      return { endpoint: `/cnpj/${encodeURIComponent(cnpj)}`, timeoutMs: DEFAULT_TIMEOUT_MS };
+    }
+    case 'cnpj-funcionarios': {
+      const cnpj = requiredString(request.input, 'cnpj');
+      return {
+        endpoint: optionalQueryEndpoint(
+          `/employees/${encodeURIComponent(cnpj)}`,
+          request.input,
+          ['page', 'pageSize', 'q', 'ano'],
+        ),
+        timeoutMs: DEFAULT_TIMEOUT_MS,
+      };
+    }
+    case 'ip-geolocalizacao': {
+      const ip = requiredString(request.input, 'ip');
+      return { endpoint: `/ip/${encodeURIComponent(ip)}`, timeoutMs: DEFAULT_TIMEOUT_MS };
+    }
+    case 'dominio-whois': {
+      const domain = requiredString(request.input, 'domain');
+      return { endpoint: `/domain/${encodeURIComponent(domain)}`, timeoutMs: DEFAULT_TIMEOUT_MS };
+    }
+    case 'logins-vazados':
+      return {
+        endpoint: queryEndpoint('/leaked-logins', request.input, 'q', [
+          'type',
+          'page',
+          'limit',
+          'root_domain',
+          'scope',
+        ]),
+        timeoutMs: DEFAULT_TIMEOUT_MS,
+      };
+    case 'cpf-rais': {
+      const cpf = requiredCpf(request.input);
+      return { endpoint: `/rais/${encodeURIComponent(cpf)}`, timeoutMs: DEFAULT_TIMEOUT_MS };
+    }
+    case 'pis-pasep': {
+      const pis = requiredString(request.input, 'pis');
+      return { endpoint: `/pis/${encodeURIComponent(pis)}`, timeoutMs: DEFAULT_TIMEOUT_MS };
+    }
+    case 'irpf-cpf': {
+      const cpf = requiredCpf(request.input);
+      return { endpoint: `/irpf/${encodeURIComponent(cpf)}`, timeoutMs: DEFAULT_TIMEOUT_MS };
+    }
     default:
       throw new ProviderError('PROVIDER_UNAVAILABLE', 'Módulo sem integração Athenas.');
   }
+}
+
+function containsCredentialKey(key: string): boolean {
+  const normalized = key.replace(/([a-z0-9])([A-Z])/gu, '$1_$2').toLowerCase();
+  return normalized.split(/[^a-z0-9]+/u).some((part) =>
+    part === 'pass' ||
+    part.startsWith('password') ||
+    part.startsWith('senha') ||
+    part.startsWith('credential') ||
+    part.startsWith('token') ||
+    part.startsWith('secret') ||
+    part.startsWith('cookie'),
+  );
+}
+
+function removeCredentialFields(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(removeCredentialFields);
+  }
+
+  if (!isRecord(value)) {
+    return value;
+  }
+
+  const sanitized: Record<string, unknown> = {};
+  for (const [key, nestedValue] of Object.entries(value)) {
+    if (!containsCredentialKey(key)) {
+      sanitized[key] = removeCredentialFields(nestedValue);
+    }
+  }
+
+  return sanitized;
 }
 
 function getData(payload: Record<string, unknown>): Record<string, unknown> {
@@ -183,12 +419,15 @@ export class AthenasProvider implements ProviderClient {
 
   private readonly apiKey: string;
 
-  async execute(request: ProviderRequest): Promise<ProviderResult> {
-    const route = routeFor(request);
-    const url = new URL(route.endpoint.replace(/^\//u, ''), this.baseUrl);
-    const timeoutSignal = AbortSignal.timeout(route.timeoutMs);
-    const signal = request.signal
-      ? AbortSignal.any([request.signal, timeoutSignal])
+  private async requestJson(
+    endpoint: string,
+    timeoutMs: number,
+    requestSignal?: AbortSignal,
+  ): Promise<Record<string, unknown>> {
+    const url = new URL(endpoint.replace(/^\//u, ''), this.baseUrl);
+    const timeoutSignal = AbortSignal.timeout(timeoutMs);
+    const signal = requestSignal
+      ? AbortSignal.any([requestSignal, timeoutSignal])
       : timeoutSignal;
 
     let response: Response;
@@ -196,6 +435,7 @@ export class AthenasProvider implements ProviderClient {
       response = await this.fetcher(url, {
         method: 'GET',
         headers: { 'X-API-Key': this.apiKey, Accept: 'application/json' },
+        redirect: 'error',
         signal,
       });
     } catch {
@@ -227,14 +467,30 @@ export class AthenasProvider implements ProviderClient {
       throw new ProviderError('QUERY_FAILED', 'O provider Athenas devolveu uma resposta inválida.');
     }
 
-    const data = request.module === 'cpf-basico'
-      ? normalizeCpfResult(payload, request.input.cpf as string)
-      : normalizeDossierResult(payload, request.input.cpf as string);
+    return payload;
+  }
+
+  async execute(request: ProviderRequest): Promise<ProviderResult> {
+    const route = routeFor(request);
+    const payload = await this.requestJson(route.endpoint, route.timeoutMs, request.signal);
+
+    let data: unknown = payload;
+    if (request.module === 'cpf-basico') {
+      data = normalizeCpfResult(payload, requiredCpf(request.input));
+    } else if (request.module === 'dossie-360') {
+      data = normalizeDossierResult(payload, requiredCpf(request.input));
+    } else if (request.module === 'logins-vazados') {
+      data = removeCredentialFields(payload);
+    }
 
     return { kind: 'result', data };
   }
 
   async poll(): Promise<ProviderResult> {
     throw new ProviderError('PROVIDER_UNAVAILABLE', 'A API Athenas responde as consultas diretamente.');
+  }
+
+  async status(signal?: AbortSignal): Promise<Record<string, unknown>> {
+    return this.requestJson('/status', STATUS_TIMEOUT_MS, signal);
   }
 }

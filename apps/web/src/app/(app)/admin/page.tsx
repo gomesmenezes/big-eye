@@ -68,27 +68,30 @@ function DashboardContent({ dashboard }: Readonly<{ dashboard: AdminDashboard }>
         <Metric label="Taxa de falha" value={formatFailureRate(totals.failureRate)} />
       </section>
 
-      <section className="mt-8 rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-100 px-5 py-4">
-          <h3 className="font-semibold text-slate-950">Chamadas/Consultas</h3>
-          <p className="mt-1 text-sm text-slate-500">Volume registrado no período consolidado pela API.</p>
+      <section className="mt-8 rounded-2xl border border-[#1c2436] bg-[#0d121c] shadow-card overflow-hidden">
+        <div className="border-b border-[#1c2436] px-5 py-4">
+          <div className="flex items-center gap-2">
+            <span className="h-4 w-1 rounded-full bg-gradient-to-b from-cyan-400 to-teal-400" />
+            <h3 className="font-bold text-white">Chamadas/Consultas</h3>
+          </div>
+          <p className="mt-1 text-xs text-slate-400">Volume registrado no período consolidado pela API.</p>
         </div>
         {moduleRows.length === 0 ? (
-          <p className="px-5 py-8 text-sm text-slate-500">Ainda não há consultas para exibir.</p>
+          <p className="px-5 py-8 text-xs text-slate-500">Ainda não há consultas para exibir.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm">
-              <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+              <thead className="border-b border-[#1c2436] bg-[#111622] text-xs uppercase tracking-wider text-slate-400">
                 <tr>
                   <th className="px-5 py-3 font-semibold" scope="col">Chamadas/Consultas</th>
                   <th className="px-5 py-3 font-semibold" scope="col">Consultas</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-[#1c2436]">
                 {moduleRows.map((row) => (
-                  <tr key={row.moduleSlug}>
-                    <td className="px-5 py-3 font-medium text-slate-900">{row.moduleSlug}</td>
-                    <td className="px-5 py-3 text-slate-600">{getNumber(row.count)}</td>
+                  <tr className="hover:bg-[#121824] transition" key={row.moduleSlug}>
+                    <td className="px-5 py-3 font-medium text-cyan-300">{row.moduleSlug}</td>
+                    <td className="px-5 py-3 text-slate-300">{getNumber(row.count)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -102,9 +105,9 @@ function DashboardContent({ dashboard }: Readonly<{ dashboard: AdminDashboard }>
 
 function Metric({ label, value }: Readonly<{ label: string; value: number | string }>) {
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p className="text-sm font-medium text-slate-500">{label}</p>
-      <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{value}</p>
+    <article className="rounded-2xl border border-[#1c2436] bg-[#0d121c] p-5 shadow-card transition hover:border-[#2a3752]">
+      <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">{label}</p>
+      <p className="mt-2 text-3xl font-black tracking-tight text-white">{value}</p>
     </article>
   );
 }

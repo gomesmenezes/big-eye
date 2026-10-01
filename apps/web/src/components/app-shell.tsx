@@ -1,9 +1,5 @@
 'use client';
 
-import Image from 'next/image';
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { type ReactNode, useEffect, useState } from 'react';
 import {
   Compass,
   Cpu,
@@ -11,19 +7,19 @@ import {
   LogOut,
   Menu,
   X,
-  Activity,
-  ArrowUpRight,
-  ShieldCheck,
-  Search,
-  Sparkles,
-  ChevronRight,
   Zap,
 } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import { type ReactNode, useEffect, useState } from 'react';
 
 import type { MeDTOType } from '@big-eye/contracts';
 
 import { apiFetchPath } from '../lib/api';
 import { createSupabaseBrowserClient } from '../lib/supabase/client';
+
+import { AthenasStatusSidebar } from './athenas-api-status';
 
 const navigation = [
   { href: '/dashboard', label: 'Visão Geral', icon: Compass, badge: 'Live' },
@@ -80,7 +76,7 @@ export function AppShell({ children }: Readonly<{ children: ReactNode }>) {
             />
           </div>
           <div>
-            <span className="font-mono text-sm font-black tracking-widest text-white uppercase">
+            <span className="text-sm font-black tracking-widest text-white uppercase">
               BIG EYE
             </span>
           </div>
@@ -121,21 +117,14 @@ export function AppShell({ children }: Readonly<{ children: ReactNode }>) {
                 />
               </div>
               <div>
-                <span className="font-mono text-base font-extrabold tracking-wider text-white">
+                <span className="text-base font-extrabold tracking-wider text-white">
                   BIG EYE
                 </span>
               </div>
             </Link>
           </div>
 
-          {/* System Pulse Banner */}
-          <div className="mb-6 flex items-center justify-between rounded-xl border border-[#1c2436] bg-[#0f1420] px-3.5 py-2 text-[11px]">
-            <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" />
-              <span className="font-medium text-slate-300">Conectores Ativos</span>
-            </div>
-            <span className="font-mono text-[10px] font-bold text-cyan-400">99.98%</span>
-          </div>
+          <AthenasStatusSidebar onNavigate={() => setMobileMenuOpen(false)} />
 
           {/* Nav Section */}
           <div className="space-y-1">
@@ -171,7 +160,7 @@ export function AppShell({ children }: Readonly<{ children: ReactNode }>) {
                     </div>
 
                     {item.badge ? (
-                      <span className="rounded-full bg-cyan-950 px-2 py-0.5 font-mono text-[9px] font-bold text-cyan-400 border border-cyan-800/50">
+                      <span className="rounded-full bg-cyan-950 px-2 py-0.5 text-[9px] font-bold text-cyan-400 border border-cyan-800/50">
                         {item.badge}
                       </span>
                     ) : null}
@@ -184,14 +173,14 @@ export function AppShell({ children }: Readonly<{ children: ReactNode }>) {
           {/* Interactive Balance HUD in Sidebar */}
           <div className="mt-8 rounded-2xl border border-cyan-900/30 bg-gradient-to-b from-[#111724] to-[#0c101a] p-4 shadow-card">
             <div className="flex items-center justify-between">
-              <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                 Saldo de Operações
               </span>
               <Coins className="h-4 w-4 text-cyan-400" />
             </div>
 
             <div className="mt-3 flex items-baseline gap-2">
-              <span className="font-mono text-3xl font-black tracking-tight text-white">
+              <span className="text-3xl font-black tracking-tight text-white">
                 {me?.balance ?? 0}
               </span>
               <span className="text-xs font-medium text-slate-400">créditos</span>

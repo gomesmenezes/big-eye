@@ -51,9 +51,43 @@ As variáveis `NEXT_PUBLIC_*` são incorporadas ao build do Next. Não reutilize
 
 ### Consultas Athenas
 
-Configure `PROVIDER_MODE=upstream` e `ATHENAS_API_KEY` nos serviços da API e do worker. A API exige a chave na inicialização; o worker usa a mesma chave para as consultas assíncronas. O adaptador envia `X-API-Key`, trata `404` como consulta sem dados e deixa o fluxo existente reembolsar o crédito Big Eye em qualquer falha. O Dossiê 360 usa timeout de 60 segundos conforme a latência indicada pela Athenas.
+Configure `PROVIDER_MODE=upstream` e `ATHENAS_API_KEY` nos serviços da API e do worker. A API exige a chave na inicialização; o worker usa a mesma chave para as consultas assíncronas. O adaptador envia `X-API-Key`, trata `404` como consulta sem dados e deixa o fluxo existente reembolsar o crédito Big Eye em qualquer falha. O Dossiê 360 usa timeout de 60 segundos, e CPF Intelligent usa 30 segundos no worker.
 
-Atualmente, o catálogo habilita `cpf-basico` (`GET /cpf/:cpf`) e `dossie-360` (`GET /dossie-360/:cpf`). Os outros itens ainda estão marcados como indisponíveis no catálogo.
+O catálogo habilita os endpoints de dados Athenas abaixo. Módulos Big Eye sem rota Athenas semanticamente equivalente continuam indisponíveis.
+
+| Endpoint Athenas | Módulo Big Eye | Entrada principal |
+| --- | --- | --- |
+| `/cadsus/:cpf` | `cpf-cadsus` | `cpf` |
+| `/cpf/:cpf` | `cpf-basico` | `cpf` |
+| `/dossie-360/:cpf` | `dossie-360` | `cpf` |
+| `/cpf-intelligent/:cpf` | `cpf-intelligent` | `cpf` |
+| `/obito/:cpf` | `cpf-obito` | `cpf` |
+| `/parentes/:cpf` | `cpf-parentes` | `cpf` |
+| `/score/:cpf` | `cpf-score` | `cpf` |
+| `/cpf-detran/:cpf` | `cpf-detran` | `cpf` |
+| `/sptrans/:cpf` | `sptrans-cpf` | `cpf` |
+| `/email/:email` | `email-reverso` | `email` |
+| `/phone/:phone` | `telefone-reverso` | `phone` |
+| `/name-abbreviated` | `nome-abreviado` | `query` |
+| `/name` | `nome-completo` | `query` |
+| `/address` | `endereco-consulta` | `query` |
+| `/plate/:plate` | `placa-basico` | `plate` |
+| `/chassi/:chassi` | `chassi-consulta` | `chassi` |
+| `/renavam/:renavam` | `renavam-consulta` | `renavam` |
+| `/cnpj/:cnpj` | `cnpj-basico` | `cnpj` |
+| `/employees/:cnpj` | `cnpj-funcionarios` | `cnpj` |
+| `/ip/:ip` | `ip-geolocalizacao` | `ip` |
+| `/domain/:domain` | `dominio-whois` | `domain` |
+| `/leaked-logins` | `logins-vazados` | `q` |
+| `/rais/:cpf` | `cpf-rais` | `cpf` |
+| `/pis/:pis` | `pis-pasep` | `pis` |
+| `/irpf/:cpf` | `irpf-cpf` | `cpf` |
+
+Os filtros opcionais de busca por nome/endereço e funcionários são enviados como query params somente quando preenchidos. Campos de senha, token, segredo e cookie de `/leaked-logins` são removidos antes de a resposta chegar ao cache de resultados; campos de login e URL permanecem.
+
+`GET /status` é um endpoint operacional e não entra na carteira de créditos. O Big Eye o expõe como `GET /athenas/status` para usuários autenticados e também como `GET /admin/providers/athenas/status`, protegido por `AdminGuard`. A documentação também menciona `/status/:endpointId`, mas não descreve o contrato dessa rota, então ela não é chamada.
+
+Os seguintes módulos do catálogo permanecem desabilitados porque a Athenas não fornece uma rota equivalente: `cpf-endereco`, `cpf-telefones`, `cpf-processos`, `cpf-renda`, `cpf-beneficios`, `placa-completa`, os submódulos de leilão/multas/restrições/proprietário de placa, `cnpj-completo`, os submódulos de sócios/endereço/Simples/protestos/processos de CNPJ e busca por usuário de rede social. As rotas de veículo e CNPJ da Athenas devolvem uma resposta completa por consulta, sem endpoints separados para esses recortes.
 
 ## Primeiro ambiente local
 

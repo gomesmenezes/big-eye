@@ -3,10 +3,13 @@ import { PrismaClient, Role, UserStatus } from '@prisma/client';
 const prisma = new PrismaClient();
 
 const creditPackages = [
-  { slug: 'creditos-10', credits: 10, priceCents: 990, sort: 1 },
-  { slug: 'creditos-50', credits: 50, priceCents: 3_990, sort: 2 },
-  { slug: 'creditos-100', credits: 100, priceCents: 6_990, sort: 3 },
+  { slug: 'teste-5', credits: 5, priceCents: 490, sort: 1 },
+  { slug: 'popular-1000', credits: 1_000, priceCents: 3_990, sort: 2 },
+  { slug: 'avancado-5000', credits: 5_000, priceCents: 9_990, sort: 3 },
+  { slug: 'pro-20000', credits: 20_000, priceCents: 24_990, sort: 4 },
 ] as const;
+
+const retiredCreditPackageSlugs = ['creditos-10', 'creditos-50', 'creditos-100'] as const;
 
 async function main(): Promise<void> {
   for (const creditPackage of creditPackages) {
@@ -20,6 +23,11 @@ async function main(): Promise<void> {
       update: {},
     });
   }
+
+  await prisma.creditPackage.updateMany({
+    where: { slug: { in: [...retiredCreditPackageSlugs] } },
+    data: { active: false },
+  });
 
   if (process.env.NODE_ENV !== 'production') {
     const adminId = '00000000-0000-4000-8000-000000000001';

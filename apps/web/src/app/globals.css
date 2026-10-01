@@ -6,6 +6,31 @@
   color-scheme: dark;
 }
 
+/* Login liquid glass — vidro fosco calmo + rim light (sem distorção SVG:
+   a camada refrativa criava costura visível sobre o fundo geométrico). */
+.login-glass {
+  position: relative;
+  isolation: isolate;
+  border-radius: 20px;
+  border: 1px solid rgba(103, 232, 249, 0.22);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0) 28%),
+    linear-gradient(180deg, rgba(12, 20, 34, 0.55), rgba(8, 12, 22, 0.5));
+  box-shadow:
+    0 24px 60px rgba(0, 0, 5, 0.55),
+    0 18px 50px -12px rgba(6, 182, 212, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(103, 232, 249, 0.08);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .login-glass {
+    background: rgba(10, 16, 28, 0.92);
+  }
+}
+
 * {
   box-sizing: border-box;
 }
@@ -28,8 +53,12 @@ body {
 button,
 input,
 select,
-textarea {
-  font: inherit;
+textarea,
+code,
+kbd,
+samp,
+pre {
+  font-family: inherit;
 }
 
 /* Custom dark scrollbars */

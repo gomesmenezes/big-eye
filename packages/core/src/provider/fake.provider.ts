@@ -58,24 +58,36 @@ function readCpf(request: ProviderRequest): string {
 }
 
 function buildResult(request: ProviderRequest): unknown {
-  const cpf = readCpf(request);
-
   switch (request.module) {
-    case 'cpf-basico':
+    case 'cpf-basico': {
+      const cpf = readCpf(request);
       return {
         nome: `Pessoa ${cpf.slice(-4)}`,
         cpf,
         nascimento: '1990-01-01',
         situacao: 'ATIVA',
       };
-    case 'dossie-360':
+    }
+    case 'dossie-360': {
+      const cpf = readCpf(request);
       return {
         resumo: `Consulta simulada para o CPF final ${cpf.slice(-2)}.`,
         fontes: ['fake-provider'],
       };
+    }
     default:
-      throw new ProviderError('PROVIDER_UNAVAILABLE', 'Chamada/Consulta indisponível no provedor.');
+      return {
+        provider: 'fake-provider',
+        module: request.module,
+        input: request.input,
+      };
   }
+}
+
+function asyncTriggerValue(request: ProviderRequest): string | undefined {
+  return Object.values(request.input).find(
+    (value): value is string => typeof value === 'string' && value.length > 0,
+  );
 }
 
 /**
@@ -108,10 +120,10 @@ export class FakeProvider implements ProviderClient {
       }
     }
 
-    const cpf = readCpf(request);
     const requestId = `fake-${requestFingerprint(request)}`;
+    const triggerValue = asyncTriggerValue(request);
 
-    if (contract.mode === 'async' && cpf.endsWith('0')) {
+    if (contract.mode === 'async' && triggerValue?.endsWith('0')) {
       this.pending.set(requestId, { request, idempotencyKey: stableKey });
       if (stableKey) {
         this.pendingByIdempotencyKey.set(stableKey, requestId);

@@ -11,6 +11,7 @@ import {
   readNextCursor,
   type AdminPackage,
 } from '../../../../components/admin/admin-types';
+import { OrbLoader } from '../../../../components/orb-loader';
 import { apiFetch } from '../../../../lib/api';
 
 type PackageDraft = {
@@ -139,23 +140,28 @@ export default function AdminPackagesPage() {
 
   return (
     <AdminPage
-      actions={<button className="rounded-xl bg-teal-800 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700" onClick={beginCreate} type="button">Novo pacote</button>}
+      actions={<button className="rounded-xl bg-gradient-to-r from-cyan-600 to-teal-600 px-4 py-2.5 text-xs font-bold text-white shadow-glow transition hover:from-cyan-500 hover:to-teal-500" onClick={beginCreate} type="button">Novo pacote</button>}
       description="Mantenha os pacotes de créditos e preços exibidos no catálogo de compra."
       title="Pacotes"
     >
       {error ? <div className="mb-5"><AdminError message={error} /></div> : null}
-      {message ? <p className="mb-5 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800" role="status">{message}</p> : null}
+      {message ? <p className="mb-5 rounded-xl border border-emerald-800/60 bg-emerald-950/40 px-4 py-3 text-xs text-emerald-300" role="status">{message}</p> : null}
       {isFormOpen ? <PackageForm initial={editing} isSaving={runningId === (editing?.id ?? 'new')} onCancel={() => { setIsFormOpen(false); setEditing(undefined); }} onSave={(draft) => void savePackage(draft)} key={editing?.id ?? 'new'} /> : null}
 
-      <section className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-100 px-5 py-4"><h3 className="font-semibold text-slate-950">Pacotes disponíveis</h3></div>
+      <section className="mt-6 overflow-hidden rounded-2xl border border-[#1c2436] bg-[#0d121c] shadow-card">
+        <div className="border-b border-[#1c2436] px-5 py-4">
+          <div className="flex items-center gap-2">
+            <span className="h-4 w-1 rounded-full bg-gradient-to-b from-cyan-400 to-teal-400" />
+            <h3 className="font-bold text-white">Pacotes disponíveis</h3>
+          </div>
+        </div>
         {isLoading ? <div className="p-5"><AdminLoading /></div> : null}
-        {!isLoading && packages.length === 0 ? <p className="p-5 text-sm text-slate-500">Nenhum pacote cadastrado.</p> : null}
+        {!isLoading && packages.length === 0 ? <p className="p-5 text-xs text-slate-500">Nenhum pacote cadastrado.</p> : null}
         {!isLoading && packages.length > 0 ? (
           <>
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm">
-              <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+              <thead className="border-b border-[#1c2436] bg-[#111622] text-xs uppercase tracking-wider text-slate-400">
                 <tr>
                   <th className="px-5 py-3 font-semibold" scope="col">Pacote</th>
                   <th className="px-5 py-3 font-semibold" scope="col">Créditos</th>
@@ -164,20 +170,28 @@ export default function AdminPackagesPage() {
                   <th className="px-5 py-3" scope="col"><span className="sr-only">Ações</span></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-[#1c2436]">
                 {packages.map((creditPackage) => (
-                  <tr key={creditPackage.id}>
-                    <td className="px-5 py-4"><p className="font-mono text-sm font-medium text-slate-900">{creditPackage.slug}</p><p className="mt-1 text-xs text-slate-500">ordem {creditPackage.sort ?? 0}</p></td>
-                    <td className="px-5 py-4 text-slate-600">{creditPackage.credits}</td>
-                    <td className="px-5 py-4 font-semibold text-slate-900">{formatCurrency(creditPackage.priceCents)}</td>
+                  <tr className="hover:bg-[#121824] transition" key={creditPackage.id}>
+                    <td className="px-5 py-4">
+                      <p className="text-sm font-bold text-white">{creditPackage.slug}</p>
+                      <p className="mt-1 text-[11px] text-slate-400">ordem {creditPackage.sort ?? 0}</p>
+                    </td>
+                    <td className="px-5 py-4 text-xs text-slate-300">{creditPackage.credits}</td>
+                    <td className="px-5 py-4 font-bold text-cyan-300">{formatCurrency(creditPackage.priceCents)}</td>
                     <td className="px-5 py-4"><AdminStatus status={creditPackage.active === false ? 'suspended' : 'active'} /></td>
-                    <td className="px-5 py-4 text-right"><div className="flex justify-end gap-3"><button className="text-sm font-semibold text-teal-800 hover:text-teal-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700" onClick={() => beginEdit(creditPackage)} type="button">Editar</button><button className="text-sm font-semibold text-red-700 hover:text-red-800 disabled:opacity-50" disabled={runningId === creditPackage.id} onClick={() => void togglePackage(creditPackage)} type="button">{creditPackage.active === false ? 'Ativar' : 'Desativar'}</button></div></td>
+                    <td className="px-5 py-4 text-right">
+                      <div className="flex justify-end gap-3 text-xs">
+                        <button className="font-bold text-cyan-400 transition hover:text-cyan-300" onClick={() => beginEdit(creditPackage)} type="button">Editar</button>
+                        <button className="inline-flex items-center gap-1.5 font-bold text-red-400 transition hover:text-red-300 disabled:opacity-50" disabled={runningId === creditPackage.id} onClick={() => void togglePackage(creditPackage)} type="button">{runningId === creditPackage.id ? (<><OrbLoader color="#f87171" size={20} state="working" /><span>Processando...</span></>) : (creditPackage.active === false ? 'Ativar' : 'Desativar')}</button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          {nextCursor ? <div className="border-t border-slate-100 px-5 py-4 text-center"><button className="text-sm font-semibold text-teal-800 hover:text-teal-900 disabled:cursor-wait disabled:opacity-60" disabled={isLoadingMore} onClick={() => void loadPackages(nextCursor, true)} type="button">{isLoadingMore ? 'Carregando...' : 'Carregar mais'}</button></div> : null}
+          {nextCursor ? <div className="border-t border-[#1c2436] px-5 py-4 text-center"><button className="inline-flex items-center gap-1.5 text-xs font-bold text-cyan-400 transition hover:text-cyan-300 disabled:cursor-wait disabled:opacity-60" disabled={isLoadingMore} onClick={() => void loadPackages(nextCursor, true)} type="button">{isLoadingMore ? (<><OrbLoader color="#22d3ee" size={20} state="working" /><span>Carregando...</span></>) : 'Carregar mais'}</button></div> : null}
           </>
         ) : null}
       </section>
@@ -219,17 +233,38 @@ function PackageForm({
   }
 
   return (
-    <form className="rounded-2xl border border-teal-100 bg-teal-50/50 p-5" onSubmit={submit}>
-      <div className="flex items-start justify-between gap-4"><div><h3 className="font-semibold text-slate-950">{initial ? 'Editar pacote' : 'Novo pacote'}</h3><p className="mt-1 text-sm text-slate-600">O preço deve ser informado em centavos de BRL.</p></div><button className="text-sm font-semibold text-slate-500 hover:text-slate-800" onClick={onCancel} type="button">Cancelar</button></div>
-      <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <label className="text-sm font-medium text-slate-700">Slug<input className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5" onChange={(event) => setDraft((current) => ({ ...current, slug: event.target.value }))} value={draft.slug} /></label>
-        <label className="text-sm font-medium text-slate-700">Créditos<input className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5" inputMode="numeric" onChange={(event) => setDraft((current) => ({ ...current, credits: event.target.value }))} value={draft.credits} /></label>
-        <label className="text-sm font-medium text-slate-700">Preço (centavos)<input className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5" inputMode="numeric" onChange={(event) => setDraft((current) => ({ ...current, priceCents: event.target.value }))} value={draft.priceCents} /></label>
-        <label className="text-sm font-medium text-slate-700">Ordem<input className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5" inputMode="numeric" onChange={(event) => setDraft((current) => ({ ...current, sort: event.target.value }))} value={draft.sort} /></label>
+    <form className="rounded-2xl border border-cyan-800/40 bg-[#0d121c] p-6 shadow-card" onSubmit={submit}>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h3 className="font-bold text-white">{initial ? 'Editar pacote' : 'Novo pacote'}</h3>
+          <p className="mt-1 text-xs text-slate-400">O preço deve ser informado em centavos de BRL.</p>
+        </div>
+        <button className="text-xs font-bold text-slate-400 hover:text-white transition" onClick={onCancel} type="button">Cancelar</button>
       </div>
-      <label className="mt-4 flex items-center gap-2 text-sm font-medium text-slate-700"><input checked={draft.active} onChange={(event) => setDraft((current) => ({ ...current, active: event.target.checked }))} type="checkbox" /> Disponível para compra</label>
-      {formError ? <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">{formError}</p> : null}
-      <button className="mt-5 rounded-lg bg-teal-800 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:opacity-60" disabled={isSaving} type="submit">{isSaving ? 'Salvando...' : 'Salvar pacote'}</button>
+      <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+          Slug
+          <input className="mt-1.5 w-full rounded-xl border border-[#1c2436] bg-[#121824] px-3.5 py-2.5 text-xs text-white placeholder:text-slate-500 outline-none transition focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20" onChange={(event) => setDraft((current) => ({ ...current, slug: event.target.value }))} value={draft.slug} />
+        </label>
+        <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+          Créditos
+          <input className="mt-1.5 w-full rounded-xl border border-[#1c2436] bg-[#121824] px-3.5 py-2.5 text-xs text-white placeholder:text-slate-500 outline-none transition focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20" inputMode="numeric" onChange={(event) => setDraft((current) => ({ ...current, credits: event.target.value }))} value={draft.credits} />
+        </label>
+        <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+          Preço (centavos)
+          <input className="mt-1.5 w-full rounded-xl border border-[#1c2436] bg-[#121824] px-3.5 py-2.5 text-xs text-white placeholder:text-slate-500 outline-none transition focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20" inputMode="numeric" onChange={(event) => setDraft((current) => ({ ...current, priceCents: event.target.value }))} value={draft.priceCents} />
+        </label>
+        <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+          Ordem
+          <input className="mt-1.5 w-full rounded-xl border border-[#1c2436] bg-[#121824] px-3.5 py-2.5 text-xs text-white placeholder:text-slate-500 outline-none transition focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20" inputMode="numeric" onChange={(event) => setDraft((current) => ({ ...current, sort: event.target.value }))} value={draft.sort} />
+        </label>
+      </div>
+      <label className="mt-4 flex items-center gap-2 text-xs text-slate-300">
+        <input checked={draft.active} className="rounded border-[#1c2436] bg-[#121824] text-cyan-500 focus:ring-cyan-500/50" onChange={(event) => setDraft((current) => ({ ...current, active: event.target.checked }))} type="checkbox" />
+        Disponível para compra
+      </label>
+      {formError ? <p className="mt-4 rounded-xl border border-red-900/60 bg-red-950/40 p-3 text-xs text-red-300" role="alert">{formError}</p> : null}
+      <button className="inline-flex items-center justify-center gap-1.5 mt-5 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-600 px-5 py-2.5 text-xs font-bold text-white shadow-glow transition hover:from-cyan-500 hover:to-teal-500 disabled:opacity-60" disabled={isSaving} type="submit">{isSaving ? (<><OrbLoader color="#ffffff" size={20} state="working" /><span>Salvando...</span></>) : 'Salvar pacote'}</button>
     </form>
   );
 }

@@ -1,4 +1,5 @@
 import type {
+  AthenasStatusResponseDTOType,
   MeDTOType,
   PackageDTOType,
   PaymentDTOType,
@@ -26,6 +27,7 @@ export type ModuleDTOType = {
 
 type ApiResponseByPath = {
   '/me': MeDTOType;
+  '/athenas/status': AthenasStatusResponseDTOType;
   '/modules': ModuleDTOType[];
   '/queries': QueryDTOType[];
   '/packages': PackageDTOType[];

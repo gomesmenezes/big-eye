@@ -10,6 +10,7 @@ import { DatabaseModule } from '../db/database.module.js';
 import { AdminDashboardController } from './admin-dashboard.controller.js';
 import { AdminPackagesController } from './admin-packages.controller.js';
 import { AdminPaymentsController } from './admin-payments.controller.js';
+import { AdminProviderController } from './admin-provider.controller.js';
 import {
   ADMIN_QUERY_QUEUE,
   ADMIN_RETRY_INPUT_CACHE,
@@ -25,6 +26,7 @@ import { AdminUsersController } from './admin-users.controller.js';
     AdminPaymentsController,
     AdminPackagesController,
     AdminDashboardController,
+    AdminProviderController,
   ],
   providers: [
     { provide: ADMIN_QUERY_QUEUE, useValue: queryQueue },

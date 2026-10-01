@@ -11,6 +11,7 @@ import { queryEventsBus } from '@big-eye/core/query-events';
 import { resultCache } from '@big-eye/core/result-cache';
 
 import { AdminModule } from './admin/admin.module.js';
+import { AthenasStatusModule } from './athenas/athenas-status.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter.js';
 import { CreditsModule } from './credits/credits.module.js';
@@ -29,6 +30,7 @@ import { QueriesController } from './queries/queries.controller.js';
   imports: [
     AuthModule,
     AdminModule,
+    AthenasStatusModule,
     DatabaseModule,
     CreditsModule,
     MeModule,

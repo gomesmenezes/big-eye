@@ -1,10 +1,6 @@
 'use client';
 
-import Image from 'next/image';
-import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
 import {
-  Compass,
   Search,
   ArrowRight,
   Shield,
@@ -19,16 +15,17 @@ import {
   Fingerprint,
   Building2,
   Car,
-  Globe,
-  Zap,
   Activity,
   Terminal,
   ChevronRight,
-  Sparkles,
 } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { useEffect, useMemo, useState } from 'react';
 
 import type { MeDTOType, QueryDTOType } from '@big-eye/contracts';
 
+import { AthenasApiStatusPanel, AthenasStatusBadge } from '../../../components/athenas-api-status';
 import { apiFetchPath, type ModuleDTOType } from '../../../lib/api';
 
 const statusLabels: Record<QueryDTOType['status'], string> = {
@@ -61,8 +58,8 @@ const statusColors: Record<QueryDTOType['status'], { badge: string; dot: string;
     icon: XCircle,
   },
   refunded: {
-    badge: 'border-violet-800/50 bg-violet-950/40 text-violet-300',
-    dot: 'bg-violet-400',
+    badge: 'border-sky-800/50 bg-sky-950/40 text-sky-300',
+    dot: 'bg-sky-400',
     icon: RotateCcw,
   },
 };
@@ -172,11 +169,11 @@ export default function DashboardPage() {
             <div>
               <div className="flex items-center gap-2.5">
                 <span className="h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#06b6d4]" />
-                <span className="font-mono text-[11px] font-bold tracking-widest text-cyan-400 uppercase">
+                <span className="text-[11px] font-bold tracking-widest text-cyan-400 uppercase">
                   Terminal de Operações
                 </span>
                 <span className="text-slate-600">•</span>
-                <span className="text-[11px] text-slate-400">Rede Segura Ativa</span>
+                <AthenasStatusBadge />
               </div>
 
               <h1 className="mt-2 text-2xl font-black tracking-tight text-white sm:text-3xl">
@@ -209,6 +206,8 @@ export default function DashboardPage() {
         </div>
       </section>
 
+      <AthenasApiStatusPanel />
+
       {/* Metrics Triad HUD */}
       <section className="grid gap-4 sm:grid-cols-3">
         {/* Balance Card with E2E testid */}
@@ -220,7 +219,7 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="font-mono text-4xl font-black text-white" data-testid="balance">
+            <span className="text-4xl font-black text-white" data-testid="balance">
               {me.balance}
             </span>
             <span className="text-xs font-medium text-slate-400">crédito{me.balance === 1 ? '' : 's'}</span>
@@ -239,7 +238,7 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="font-mono text-4xl font-black text-white">{modules.length}</span>
+            <span className="text-4xl font-black text-white">{modules.length}</span>
             <span className="text-xs font-medium text-slate-400">Chamadas/Consultas ativas</span>
           </div>
           <p className="mt-2 text-[11px] text-slate-500">Bases cadastrais, veiculares e societárias.</p>
@@ -254,7 +253,7 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="font-mono text-4xl font-black text-white">{queries.length}</span>
+            <span className="text-4xl font-black text-white">{queries.length}</span>
             <span className="text-xs font-medium text-slate-400">registros</span>
           </div>
           <p className="mt-2 text-[11px] text-slate-500">Acompanhamento e cache em tempo real.</p>
@@ -274,7 +273,7 @@ export default function DashboardPage() {
           value={searchQuery}
         />
         <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4">
-          <span className="rounded-md border border-[#2a364d] bg-[#141b29] px-2 py-0.5 font-mono text-[10px] text-slate-400">
+          <span className="rounded-md border border-[#2a364d] bg-[#141b29] px-2 py-0.5 text-[10px] text-slate-400">
             SEARCH
           </span>
         </div>
@@ -285,7 +284,7 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="h-3 w-1 rounded-full bg-cyan-500" />
-            <h2 className="font-mono text-xs font-bold tracking-wider text-slate-300 uppercase">
+            <h2 className="text-xs font-bold tracking-wider text-slate-300 uppercase">
               Chamadas/Consultas Disponíveis
             </h2>
           </div>
@@ -315,7 +314,7 @@ export default function DashboardPage() {
                     </div>
 
                     <div className="flex items-center gap-1.5">
-                      <span className="rounded-full border border-cyan-900/50 bg-cyan-950/40 px-2.5 py-0.5 font-mono text-[10px] font-bold text-cyan-300">
+                      <span className="rounded-full border border-cyan-900/50 bg-cyan-950/40 px-2.5 py-0.5 text-[10px] font-bold text-cyan-300">
                         {module.custoCreditos} cr
                       </span>
                     </div>
@@ -324,7 +323,7 @@ export default function DashboardPage() {
                   <h3 className="mt-3.5 text-sm font-bold text-white group-hover:text-cyan-300 transition">
                     {module.nome}
                   </h3>
-                  <p className="mt-1 font-mono text-[10px] text-slate-500">{module.slug}</p>
+                  <p className="mt-1 text-[10px] text-slate-500">{module.slug}</p>
                   <p className="mt-2.5 line-clamp-2 text-xs leading-relaxed text-slate-400">
                     {module.descricao}
                   </p>
@@ -375,7 +374,7 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="h-3 w-1 rounded-full bg-cyan-500" />
-            <h2 className="font-mono text-xs font-bold tracking-wider text-slate-300 uppercase">
+            <h2 className="text-xs font-bold tracking-wider text-slate-300 uppercase">
               Registro de Atividades Recentes
             </h2>
           </div>
@@ -408,7 +407,7 @@ export default function DashboardPage() {
                       </div>
                       <div>
                         <Link
-                          className="font-mono text-xs font-bold text-white hover:text-cyan-300"
+                          className="text-xs font-bold text-white hover:text-cyan-300"
                           href={`/consulta/${query.moduleSlug}`}
                         >
                           {query.moduleSlug}

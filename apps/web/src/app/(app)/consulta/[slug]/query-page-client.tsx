@@ -1,8 +1,8 @@
 'use client';
 
+import { ChevronLeft, Coins } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
-import { ChevronLeft, ShieldCheck, Zap, Clock, Coins, Sparkles } from 'lucide-react';
 
 import type { QueryDTOType } from '@big-eye/contracts';
 
@@ -198,7 +198,7 @@ export default function QueryPageClient({ slug }: QueryPageClientProps) {
   }
 
   if (isLoading) {
-    return <PageFrame><div className="h-8 w-72 animate-pulse rounded bg-[#12131d]" /></PageFrame>;
+    return <PageFrame><div className="h-8 w-72 animate-pulse rounded bg-[#0d121c]" /></PageFrame>;
   }
 
   if (error || !module) {
@@ -208,7 +208,7 @@ export default function QueryPageClient({ slug }: QueryPageClientProps) {
   if (!module.implemented) {
     return (
       <PageFrame>
-        <Link className="inline-flex items-center gap-1 text-xs font-semibold text-violet-400 hover:text-violet-300" href="/catalogo">
+        <Link className="inline-flex items-center gap-1 text-xs font-semibold text-cyan-400 hover:text-cyan-300" href="/catalogo">
           <ChevronLeft className="h-4 w-4" />
           <span>Voltar ao catálogo</span>
         </Link>
@@ -223,7 +223,7 @@ export default function QueryPageClient({ slug }: QueryPageClientProps) {
   return (
     <PageFrame>
       <Link
-        className="inline-flex items-center gap-1 text-xs font-semibold text-slate-400 transition hover:text-violet-400"
+        className="inline-flex items-center gap-1 text-xs font-semibold text-slate-400 transition hover:text-cyan-400"
         href="/catalogo"
       >
         <span>← Voltar ao catálogo</span>
@@ -232,8 +232,8 @@ export default function QueryPageClient({ slug }: QueryPageClientProps) {
       <section className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
         <div>
           <div className="flex items-center gap-2">
-            <span className="h-4 w-1 rounded-full bg-violet-500" />
-            <p className="text-xs font-extrabold uppercase tracking-wider text-violet-400">
+            <span className="h-4 w-1 rounded-full bg-gradient-to-b from-cyan-400 to-teal-400" />
+            <p className="text-xs font-extrabold uppercase tracking-wider text-cyan-400">
               {module.mode === 'async' ? 'Consulta acompanhada' : 'Consulta imediata'}
             </p>
           </div>
@@ -246,7 +246,7 @@ export default function QueryPageClient({ slug }: QueryPageClientProps) {
           <div className="mt-5 flex flex-wrap gap-1.5">
             {module.tags.map((tag) => (
               <span
-                className="rounded-full border border-[#26293b] bg-[#181926] px-2.5 py-0.5 text-[10px] font-semibold text-slate-300"
+                className="rounded-full border border-[#1c2436] bg-[#121824] px-2.5 py-0.5 text-[10px] font-semibold text-slate-300"
                 key={tag}
               >
                 #{tag}
@@ -254,9 +254,9 @@ export default function QueryPageClient({ slug }: QueryPageClientProps) {
             ))}
           </div>
 
-          <div className="mt-8 rounded-2xl border border-[#1e202f] bg-[#12131d] p-6 text-xs text-slate-300 shadow-card">
+          <div className="mt-8 rounded-2xl border border-[#1c2436] bg-[#0d121c] p-6 text-xs text-slate-300 shadow-card">
             <div className="flex items-center gap-2 text-white font-bold text-sm">
-              <Coins className="h-4 w-4 text-violet-400" />
+              <Coins className="h-4 w-4 text-cyan-400" />
               <span>{module.custoCreditos} crédito{module.custoCreditos === 1 ? '' : 's'} por consulta</span>
             </div>
             <p className="mt-2 leading-relaxed text-slate-400">
