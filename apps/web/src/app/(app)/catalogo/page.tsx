@@ -147,27 +147,27 @@ export default function CatalogPage() {
         <div>
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-cyan-400" />
-            <span className="text-[10px] font-bold tracking-widest text-cyan-400 uppercase">
-              Matriz de Chamadas/Consultas & Conectores
+            <span className="text-[11px] font-semibold tracking-wider text-zinc-400 uppercase">
+              Matriz de Chamadas & Conectores
             </span>
           </div>
-          <h1 className="mt-1 text-2xl font-black tracking-tight text-white sm:text-3xl">
-            Catálogo de Chamadas/Consultas
+          <h1 className="mt-1 text-xl font-bold tracking-tight text-white sm:text-2xl">
+            Catálogo de Consultas
           </h1>
-          <p className="mt-1 max-w-2xl text-xs text-slate-400">
+          <p className="mt-1 max-w-2xl text-xs text-zinc-400">
             Selecione uma fonte para pesquisar dados estruturados. O débito é transparente e unitário por consulta.
           </p>
         </div>
 
         {me ? (
-          <div className="flex items-center gap-3 rounded-2xl border border-[#1a2233] bg-[#0c1018] px-4 py-2.5 shadow-card">
+          <div className="flex items-center gap-3 rounded-xl border border-zinc-800/80 bg-zinc-900/40 px-3.5 py-2">
             <Coins className="h-4 w-4 text-cyan-400" />
             <div className="text-xs">
-              <span className="text-slate-400">Saldo: </span>
-              <strong className="font-bold text-white">{me.balance} créditos</strong>
+              <span className="text-zinc-400">Saldo: </span>
+              <strong className="font-semibold text-white">{me.balance} créditos</strong>
             </div>
             <Link
-              className="ml-2 rounded-lg bg-cyan-950/80 border border-cyan-800/40 px-2.5 py-1 text-[11px] font-bold text-cyan-300 hover:bg-cyan-900/60"
+              className="ml-2 rounded-md bg-zinc-800 border border-zinc-700/60 px-2 py-1 text-[11px] font-medium text-zinc-200 hover:bg-zinc-700 hover:text-white transition"
               href="/creditos"
             >
               + Recarregar
@@ -179,11 +179,11 @@ export default function CatalogPage() {
       {/* Search and Category Filter */}
       <section className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">
-          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-500">
+          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-zinc-500">
             <Search className="h-4 w-4" />
           </div>
           <input
-            className="w-full rounded-2xl border border-[#1c2436] bg-[#0c1018] py-3.5 pr-4 pl-11 text-xs text-white placeholder:text-slate-500 outline-none transition focus:border-cyan-500 focus:bg-[#0f1422] focus:ring-2 focus:ring-cyan-500/20"
+            className="w-full rounded-xl border border-zinc-800/80 bg-zinc-900/40 py-2.5 pr-4 pl-10 text-xs text-zinc-100 placeholder:text-zinc-500 outline-none transition focus:border-zinc-600 focus:bg-zinc-900"
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Filtrar conector por nome, tag ou termo de consulta..."
             type="text"
@@ -194,10 +194,10 @@ export default function CatalogPage() {
         {/* Category Pills */}
         <div className="flex flex-wrap gap-1.5">
           <button
-            className={`rounded-xl px-3.5 py-2.5 text-[11px] font-bold transition ${
+            className={`rounded-lg px-3 py-2 text-xs font-medium transition ${
               selectedCategory === 'all'
-                ? 'border border-cyan-500/50 bg-cyan-950/70 text-white shadow-glow'
-                : 'border border-[#1a2233] bg-[#0c1018] text-slate-400 hover:bg-[#121824] hover:text-white'
+                ? 'bg-zinc-800 text-white border border-zinc-700/80'
+                : 'border border-zinc-800/80 bg-zinc-900/40 text-zinc-400 hover:bg-zinc-800/40 hover:text-zinc-200'
             }`}
             onClick={() => setSelectedCategory('all')}
             type="button"
@@ -208,10 +208,10 @@ export default function CatalogPage() {
             const count = modules.filter((m) => m.categoria === cat).length;
             return (
               <button
-                className={`rounded-xl px-3.5 py-2.5 text-[11px] font-bold transition ${
+                className={`rounded-lg px-3 py-2 text-xs font-medium transition ${
                   selectedCategory === cat
-                    ? 'border border-cyan-500/50 bg-cyan-950/70 text-white shadow-glow'
-                    : 'border border-[#1a2233] bg-[#0c1018] text-slate-400 hover:bg-[#121824] hover:text-white'
+                    ? 'bg-zinc-800 text-white border border-zinc-700/80'
+                    : 'border border-zinc-800/80 bg-zinc-900/40 text-zinc-400 hover:bg-zinc-800/40 hover:text-zinc-200'
                 }`}
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
@@ -267,42 +267,42 @@ export default function CatalogPage() {
 
                     return (
                       <div
-                        className="group relative flex flex-col justify-between rounded-2xl border border-[#1a2233] bg-[#0c1018] p-5 transition-all duration-200 hover:-translate-y-1 hover:border-cyan-500/50 hover:bg-[#0f1422] hover:shadow-card-hover"
+                        className="group relative flex flex-col justify-between rounded-xl border border-zinc-800/80 bg-zinc-900/30 p-4 transition-all duration-200 hover:border-zinc-700 hover:bg-zinc-900/60"
                         key={module.slug}
                       >
                         <div>
                           <div className="flex items-start justify-between gap-3">
-                            <span className="text-xs font-bold text-cyan-400">
+                            <span className="text-xs font-semibold text-zinc-300 font-mono">
                               {module.slug}
                             </span>
 
                             <div className="flex items-center gap-1.5">
-                              <span className="inline-flex items-center gap-1 rounded-full border border-cyan-900/50 bg-cyan-950/40 px-2 py-0.5 text-[10px] font-bold text-cyan-300">
+                              <span className="inline-flex items-center gap-1 rounded-md border border-zinc-800 bg-zinc-800/60 px-2 py-0.5 text-[10px] font-semibold text-zinc-300">
                                 <Coins className="h-3 w-3 text-cyan-400" />
                                 {module.custoCreditos} cr
                               </span>
                             </div>
                           </div>
 
-                          <h3 className="mt-2 text-sm font-bold text-white group-hover:text-cyan-300 transition">
+                          <h3 className="mt-2 text-sm font-semibold text-zinc-100 group-hover:text-white transition">
                             {module.nome}
                           </h3>
 
-                          <p className="mt-2 text-xs leading-relaxed text-slate-400">
+                          <p className="mt-1.5 text-xs leading-relaxed text-zinc-400">
                             {module.descricao}
                           </p>
 
-                          <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                          <div className="mt-3 flex flex-wrap items-center gap-1">
                             {module.tags.map((tag) => (
                               <span
-                                className="rounded-md border border-[#1a2436] bg-[#0f1522] px-2 py-0.5 text-[10px] font-medium text-slate-400"
+                                className="rounded border border-zinc-800 bg-zinc-900/60 px-1.5 py-0.5 text-[9px] font-medium text-zinc-400"
                                 key={tag}
                               >
                                 #{tag}
                               </span>
                             ))}
 
-                            <span className="inline-flex items-center gap-1 rounded-md border border-cyan-950 bg-cyan-950/30 px-2 py-0.5 text-[10px] font-medium text-cyan-300">
+                            <span className="inline-flex items-center gap-1 rounded border border-zinc-800 bg-zinc-800/40 px-1.5 py-0.5 text-[9px] font-medium text-zinc-300">
                               {module.mode === 'async' ? (
                                 <>
                                   <Clock className="h-3 w-3" />
@@ -318,25 +318,25 @@ export default function CatalogPage() {
                           </div>
                         </div>
 
-                        <div className="mt-5 border-t border-[#172030] pt-3">
+                        <div className="mt-4 border-t border-zinc-800/80 pt-3">
                           {module.implemented && hasCredits ? (
                             <Link
-                              className="inline-flex w-full items-center justify-between rounded-xl bg-cyan-950/60 border border-cyan-800/40 px-3.5 py-2 text-xs font-bold text-cyan-300 transition hover:bg-cyan-600 hover:text-white hover:border-cyan-500"
+                              className="inline-flex w-full items-center justify-between rounded-lg bg-zinc-800/80 border border-zinc-700/60 px-3 py-1.5 text-xs font-medium text-zinc-200 transition hover:bg-zinc-700 hover:text-white"
                               href={`/consulta/${module.slug}`}
                             >
-                              <span>Consultar Chamadas/Consultas</span>
+                              <span>Consultar</span>
                               <ChevronRight className="h-3.5 w-3.5" />
                             </Link>
                           ) : module.implemented ? (
                             <Link
-                              className="inline-flex w-full items-center justify-between rounded-xl border border-[#2a364d] bg-[#121826] px-3.5 py-2 text-xs font-semibold text-slate-300 transition hover:border-cyan-500 hover:text-white"
+                              className="inline-flex w-full items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-1.5 text-xs font-medium text-zinc-300 transition hover:border-zinc-700 hover:text-white"
                               href="/creditos"
                             >
                               <span>Comprar créditos</span>
                               <Coins className="h-3.5 w-3.5 text-cyan-400" />
                             </Link>
                           ) : (
-                            <span className="inline-flex w-full items-center justify-center rounded-xl bg-[#10141f] px-3.5 py-2 text-xs font-medium text-slate-500">
+                            <span className="inline-flex w-full items-center justify-center rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-500">
                               Disponível em breve
                             </span>
                           )}

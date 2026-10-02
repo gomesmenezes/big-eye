@@ -20,37 +20,37 @@ export function AdminShell({ children }: Readonly<{ children: ReactNode }>) {
   const pathname = usePathname();
 
   return (
-    <div className="border-t border-[#1a2233] bg-[#080a0f] min-h-screen text-slate-100">
+    <div className="border-t border-zinc-800/80 bg-[#09090b] min-h-screen text-zinc-100">
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <Link
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-cyan-400 transition hover:text-cyan-300"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-cyan-400 transition hover:text-cyan-300"
               href="/dashboard"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
               <span>← Voltar ao app</span>
             </Link>
             <div className="mt-2 flex items-center gap-2">
-              <span className="flex h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#06b6d4]" />
-              <p className="text-[10px] font-bold uppercase tracking-widest text-cyan-400">
+              <span className="flex h-2 w-2 rounded-full bg-cyan-400" />
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
                 Operações de Backoffice
               </p>
             </div>
             <div className="mt-1 flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-cyan-500/30 bg-[#121826] p-1 shadow-glow">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-700/60 bg-zinc-900 p-1">
                 <Image
                   alt="Big Eye"
-                  className="h-6 w-auto object-contain"
-                  height={32}
+                  className="h-5 w-auto object-contain"
+                  height={24}
                   src="/logo-icon.png"
-                  width={32}
+                  width={24}
                 />
               </div>
-              <h1 className="text-2xl font-black tracking-tight text-white">Backoffice Big Eye</h1>
+              <h1 className="text-xl font-bold tracking-tight text-white">Backoffice Big Eye</h1>
             </div>
           </div>
-          <nav aria-label="Navegação administrativa" className="flex gap-1 overflow-x-auto rounded-2xl border border-[#1a2233] bg-[#0c1018] p-1.5 shadow-card">
+          <nav aria-label="Navegação administrativa" className="flex gap-1 overflow-x-auto rounded-lg border border-zinc-800/80 bg-zinc-900/40 p-1">
             {navigation.map((item) => {
               const isActive = item.href === '/admin'
                 ? pathname === item.href
@@ -58,10 +58,10 @@ export function AdminShell({ children }: Readonly<{ children: ReactNode }>) {
 
               return (
                 <Link
-                  className={`whitespace-nowrap rounded-xl px-3.5 py-1.5 text-xs font-bold tracking-wide transition-all ${
+                  className={`whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium transition ${
                     isActive
-                      ? 'bg-gradient-to-r from-cyan-600 to-teal-600 text-white shadow-glow'
-                      : 'text-slate-400 hover:bg-[#121826] hover:text-white'
+                      ? 'bg-zinc-800 text-white border border-zinc-700/80'
+                      : 'text-zinc-400 hover:bg-zinc-800/40 hover:text-zinc-200'
                   }`}
                   href={item.href}
                   key={item.href}

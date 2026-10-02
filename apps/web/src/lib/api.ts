@@ -28,6 +28,7 @@ export type ModuleDTOType = {
 type ApiResponseByPath = {
   '/me': MeDTOType;
   '/athenas/status': AthenasStatusResponseDTOType;
+  '/services/status': AthenasStatusResponseDTOType;
   '/modules': ModuleDTOType[];
   '/queries': QueryDTOType[];
   '/packages': PackageDTOType[];

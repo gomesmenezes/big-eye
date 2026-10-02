@@ -18,6 +18,8 @@ import {
   Activity,
   Terminal,
   ChevronRight,
+  Sparkles,
+  Layers,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -67,10 +69,30 @@ const statusColors: Record<QueryDTOType['status'], { badge: string; dot: string;
 const moduleIcons: Record<string, typeof Fingerprint> = {
   'cpf-basico': Fingerprint,
   'cpf-completo': Fingerprint,
+  'cpf-cadsus': Fingerprint,
+  'cpf-intelligent': Fingerprint,
+  'cpf-obito': Shield,
+  'cpf-parentes': Fingerprint,
+  'cpf-score': Activity,
+  'cpf-detran': Car,
+  'sptrans-cpf': Car,
+  'cpf-rais': Building2,
+  'pis-pasep': Fingerprint,
+  'irpf-cpf': Building2,
   'dossie-360': Shield,
-  'cnh-detran': Car,
-  'cnpj-receita': Building2,
-  'veiculo-placa': Car,
+  'cnpj-basico': Building2,
+  'cnpj-funcionarios': Building2,
+  'placa-basico': Car,
+  'chassi-consulta': Car,
+  'renavam-consulta': Car,
+  'email-reverso': Activity,
+  'telefone-reverso': Activity,
+  'nome-abreviado': Fingerprint,
+  'nome-completo': Fingerprint,
+  'endereco-consulta': Building2,
+  'dominio-whois': Activity,
+  'ip-geolocalizacao': Activity,
+  'logins-vazados': Shield,
 };
 
 function formatDate(value: string): string {
@@ -150,188 +172,205 @@ export default function DashboardPage() {
 
   return (
     <PageFrame>
-      {/* Command Center Hero */}
-      <section className="relative overflow-hidden rounded-2xl border border-[#1a2233] bg-gradient-to-r from-[#0d121c] via-[#0f1422] to-[#0a0e17] p-6 sm:p-8 shadow-card">
-        <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-cyan-500/10 blur-3xl" />
-        <div className="pointer-events-none absolute bottom-0 right-1/3 h-48 w-48 rounded-full bg-teal-500/10 blur-2xl" />
+      {/* ReUI Top Metric Triad HUD (matches top 3 cards in image.png) */}
+      <section className="grid gap-4 sm:grid-cols-3">
+        {/* Balance Card with E2E testid */}
+        <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/30 p-5 transition hover:border-zinc-700">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-zinc-400">Saldo Disponível</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-800 text-zinc-200 border border-zinc-700/60">
+              <Coins className="h-4 w-4 text-cyan-400" />
+            </div>
+          </div>
+          <div className="mt-3 flex items-baseline gap-2">
+            <span className="text-3xl font-bold tracking-tight text-white" data-testid="balance">
+              {me.balance}
+            </span>
+            <span className="text-xs font-medium text-zinc-400">crédito{me.balance === 1 ? '' : 's'}</span>
+          </div>
+          <div className="mt-2.5 flex items-center justify-between">
+            <span className="text-[11px] text-zinc-500">
+              {me.balance === 0 ? 'Saldo zerado.' : 'Pronto para consultas.'}
+            </span>
+            <Link
+              className="text-[11px] font-medium text-cyan-400 hover:text-cyan-300 transition"
+              href="/creditos"
+            >
+              Recarregar →
+            </Link>
+          </div>
+        </div>
 
+        {/* Modules Count */}
+        <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/30 p-5 transition hover:border-zinc-700">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-zinc-400">Chamadas / Conectores</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-800 text-zinc-200 border border-zinc-700/60">
+              <Cpu className="h-4 w-4 text-teal-400" />
+            </div>
+          </div>
+          <div className="mt-3 flex items-baseline gap-2">
+            <span className="text-3xl font-bold tracking-tight text-white">{modules.length}</span>
+            <span className="text-xs font-medium text-zinc-400">módulos ativos</span>
+          </div>
+          <div className="mt-2.5 flex items-center justify-between">
+            <span className="text-[11px] text-zinc-500">Bases cadastrais e veiculares</span>
+            <Link
+              className="text-[11px] font-medium text-cyan-400 hover:text-cyan-300 transition"
+              href="/catalogo"
+            >
+              Catálogo →
+            </Link>
+          </div>
+        </div>
+
+        {/* Queries Count */}
+        <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/30 p-5 transition hover:border-zinc-700">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-zinc-400">Consultas Recentes</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-800 text-zinc-200 border border-zinc-700/60">
+              <Activity className="h-4 w-4 text-blue-400" />
+            </div>
+          </div>
+          <div className="mt-3 flex items-baseline gap-2">
+            <span className="text-3xl font-bold tracking-tight text-white">{queries.length}</span>
+            <span className="text-xs font-medium text-zinc-400">registros</span>
+          </div>
+          <div className="mt-2.5 flex items-center justify-between">
+            <span className="text-[11px] text-zinc-500">Cache em tempo real</span>
+            <Link
+              className="text-[11px] font-medium text-cyan-400 hover:text-cyan-300 transition"
+              href="#queries"
+            >
+              Histórico →
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Hero Welcome Bar */}
+      <section className="relative overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-900/30 p-6">
         <div className="relative z-10 flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
           <div className="flex items-start gap-4">
-            <div className="hidden sm:flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-cyan-500/30 bg-[#121826]/90 p-1.5 shadow-glow">
+            <div className="hidden sm:flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-zinc-700/60 bg-zinc-800/80 p-1">
               <Image
                 alt="Big Eye"
-                className="h-8 w-auto object-contain drop-shadow-[0_0_12px_rgba(6,182,212,0.4)]"
-                height={40}
+                className="h-6 w-auto object-contain"
+                height={32}
                 src="/logo-icon.png"
-                width={40}
+                width={32}
               />
             </div>
             <div>
-              <div className="flex items-center gap-2.5">
-                <span className="h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#06b6d4]" />
-                <span className="text-[11px] font-bold tracking-widest text-cyan-400 uppercase">
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-cyan-400" />
+                <span className="text-[11px] font-semibold tracking-wider text-zinc-400 uppercase">
                   Terminal de Operações
                 </span>
-                <span className="text-slate-600">•</span>
+                <span className="text-zinc-600">•</span>
                 <AthenasStatusBadge />
               </div>
 
-              <h1 className="mt-2 text-2xl font-black tracking-tight text-white sm:text-3xl">
+              <h1 className="mt-1.5 text-xl font-bold tracking-tight text-white sm:text-2xl">
                 Olá, {displayName}
               </h1>
-              <p className="mt-1.5 max-w-xl text-xs leading-relaxed text-slate-400">
-                Acesse a matriz de Chamadas/Consultas de dados, execute pesquisas analíticas e acompanhe o histórico investigativo.
+              <p className="mt-1 max-w-xl text-xs leading-relaxed text-zinc-400">
+                Acesse a matriz de Chamadas e Consultas de dados, execute pesquisas analíticas e acompanhe o histórico investigativo.
               </p>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
             <Link
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-600 px-5 py-3 text-xs font-bold text-white shadow-glow transition hover:from-cyan-500 hover:to-teal-500 hover:shadow-glow-teal"
+              className="inline-flex items-center gap-2 rounded-lg bg-zinc-100 px-4 py-2.5 text-xs font-semibold text-zinc-900 transition hover:bg-white shadow-sm"
               href="/catalogo"
             >
-              <Search className="h-4 w-4" />
+              <Sparkles className="h-3.5 w-3.5 text-zinc-700" />
               <span>Nova consulta</span>
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-3.5 w-3.5" />
             </Link>
 
             <Link
-              className="inline-flex items-center gap-2 rounded-xl border border-[#232f48] bg-[#121929] px-4 py-3 text-xs font-semibold text-slate-300 transition hover:border-cyan-500/50 hover:bg-[#162035] hover:text-white"
+              className="inline-flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-3.5 py-2.5 text-xs font-medium text-zinc-300 transition hover:border-zinc-700 hover:bg-zinc-800 hover:text-white"
               href="/creditos"
             >
-              <Coins className="h-4 w-4 text-cyan-400" />
+              <Coins className="h-3.5 w-3.5 text-cyan-400" />
               <span>Ver Pacotes</span>
             </Link>
           </div>
         </div>
       </section>
 
-      <AthenasApiStatusPanel />
-
-      {/* Metrics Triad HUD */}
-      <section className="grid gap-4 sm:grid-cols-3">
-        {/* Balance Card with E2E testid */}
-        <div className="rounded-2xl border border-cyan-900/40 bg-gradient-to-br from-[#0e1422] to-[#0a0e18] p-5 shadow-card">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400">Saldo Disponível</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-950/80 text-cyan-400 border border-cyan-800/40">
-              <Coins className="h-4 w-4" />
-            </div>
-          </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-4xl font-black text-white" data-testid="balance">
-              {me.balance}
-            </span>
-            <span className="text-xs font-medium text-slate-400">crédito{me.balance === 1 ? '' : 's'}</span>
-          </div>
-          <p className="mt-2 text-[11px] text-slate-500">
-            {me.balance === 0 ? 'Saldo zerado. Recarregue para consultar.' : 'Disponível para consultas imediatas.'}
-          </p>
-        </div>
-
-        {/* Modules Count */}
-        <div className="rounded-2xl border border-[#1a2233] bg-[#0d111a] p-5 shadow-card">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400">Chamadas/Consultas</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-950/80 text-teal-400 border border-teal-800/40">
-              <Cpu className="h-4 w-4" />
-            </div>
-          </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-4xl font-black text-white">{modules.length}</span>
-            <span className="text-xs font-medium text-slate-400">Chamadas/Consultas ativas</span>
-          </div>
-          <p className="mt-2 text-[11px] text-slate-500">Bases cadastrais, veiculares e societárias.</p>
-        </div>
-
-        {/* Queries Count */}
-        <div className="rounded-2xl border border-[#1a2233] bg-[#0d111a] p-5 shadow-card">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400">Consultas Recentes</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-950/80 text-blue-400 border border-blue-800/40">
-              <Activity className="h-4 w-4" />
-            </div>
-          </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-4xl font-black text-white">{queries.length}</span>
-            <span className="text-xs font-medium text-slate-400">registros</span>
-          </div>
-          <p className="mt-2 text-[11px] text-slate-500">Acompanhamento e cache em tempo real.</p>
-        </div>
-      </section>
-
-      {/* Spotlight Command Bar */}
+      {/* Spotlight Search Bar (ReUI search block style) */}
       <section className="relative">
-        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-cyan-400">
+        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-zinc-400">
           <Search className="h-4 w-4" />
         </div>
         <input
-          className="w-full rounded-2xl border border-[#1c2436] bg-[#0d111a] py-3.5 pr-16 pl-11 text-xs text-white placeholder:text-slate-500 outline-none transition focus:border-cyan-500 focus:bg-[#101522] focus:ring-2 focus:ring-cyan-500/20"
+          className="w-full rounded-xl border border-zinc-800/80 bg-zinc-900/40 py-2.5 pr-16 pl-10 text-xs text-zinc-100 placeholder:text-zinc-500 outline-none transition focus:border-zinc-600 focus:bg-zinc-900"
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Localizar conector por nome, tag ou finalidade (ex: CPF, Dossiê, DETRAN, CNPJ)..."
           type="text"
           value={searchQuery}
         />
-        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4">
-          <span className="rounded-md border border-[#2a364d] bg-[#141b29] px-2 py-0.5 text-[10px] text-slate-400">
+        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+          <span className="rounded border border-zinc-800 bg-zinc-800/60 px-1.5 py-0.5 text-[10px] text-zinc-400">
             SEARCH
           </span>
         </div>
       </section>
 
-      {/* Module Grid */}
-      <section className="space-y-4">
+      {/* Module Grid (ReUI Cards) */}
+      <section className="space-y-3.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="h-3 w-1 rounded-full bg-cyan-500" />
-            <h2 className="text-xs font-bold tracking-wider text-slate-300 uppercase">
-              Chamadas/Consultas Disponíveis
+            <span className="h-2 w-2 rounded-full bg-cyan-400" />
+            <h2 className="text-xs font-semibold tracking-wider text-zinc-300 uppercase">
+              Chamadas & Consultas Disponíveis
             </h2>
           </div>
           <Link
-            className="inline-flex items-center gap-1 text-xs font-semibold text-cyan-400 hover:text-cyan-300"
+            className="inline-flex items-center gap-1 text-xs font-medium text-cyan-400 hover:text-cyan-300 transition"
             href="/catalogo"
           >
-            <span>Ver todas as Chamadas/Consultas</span>
+            <span>Ver todas as consultas</span>
             <ChevronRight className="h-3.5 w-3.5" />
           </Link>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
           {filteredModules.slice(0, 6).map((module) => {
             const Icon = moduleIcons[module.slug] || Cpu;
             const hasCredits = (me?.balance ?? 0) >= module.custoCreditos;
 
             return (
               <div
-                className="group relative flex flex-col justify-between rounded-2xl border border-[#1a2233] bg-[#0c1018] p-5 transition-all duration-200 hover:-translate-y-1 hover:border-cyan-500/50 hover:bg-[#0f1422] hover:shadow-card-hover"
+                className="group relative flex flex-col justify-between rounded-xl border border-zinc-800/80 bg-zinc-900/30 p-4 transition-all duration-200 hover:border-zinc-700 hover:bg-zinc-900/60"
                 key={module.slug}
               >
                 <div>
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#1e293f] bg-[#121826] text-cyan-400 group-hover:border-cyan-500/60 group-hover:shadow-glow">
-                      <Icon className="h-5 w-5" />
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900 text-zinc-300 group-hover:border-zinc-700 group-hover:text-cyan-400 transition">
+                      <Icon className="h-4.5 w-4.5" />
                     </div>
 
-                    <div className="flex items-center gap-1.5">
-                      <span className="rounded-full border border-cyan-900/50 bg-cyan-950/40 px-2.5 py-0.5 text-[10px] font-bold text-cyan-300">
-                        {module.custoCreditos} cr
-                      </span>
-                    </div>
+                    <span className="rounded-md border border-zinc-800 bg-zinc-800/60 px-2 py-0.5 text-[10px] font-semibold text-zinc-300">
+                      {module.custoCreditos} cr
+                    </span>
                   </div>
 
-                  <h3 className="mt-3.5 text-sm font-bold text-white group-hover:text-cyan-300 transition">
+                  <h3 className="mt-3 text-sm font-semibold text-zinc-100 group-hover:text-white transition">
                     {module.nome}
                   </h3>
-                  <p className="mt-1 text-[10px] text-slate-500">{module.slug}</p>
-                  <p className="mt-2.5 line-clamp-2 text-xs leading-relaxed text-slate-400">
+                  <p className="mt-0.5 text-[10px] text-zinc-500 font-mono">{module.slug}</p>
+                  <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-zinc-400">
                     {module.descricao}
                   </p>
 
-                  <div className="mt-3 flex flex-wrap gap-1.5">
+                  <div className="mt-3 flex flex-wrap gap-1">
                     {module.tags.map((tag) => (
                       <span
-                        className="rounded-md border border-[#1a2436] bg-[#0f1522] px-2 py-0.5 text-[10px] font-medium text-slate-400"
+                        className="rounded border border-zinc-800 bg-zinc-900/60 px-1.5 py-0.5 text-[9px] font-medium text-zinc-400"
                         key={tag}
                       >
                         #{tag}
@@ -340,10 +379,10 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                <div className="mt-5 border-t border-[#172030] pt-3">
+                <div className="mt-4 border-t border-zinc-800/80 pt-3">
                   {module.implemented && hasCredits ? (
                     <Link
-                      className="inline-flex w-full items-center justify-between rounded-xl bg-cyan-950/60 border border-cyan-800/40 px-3 py-2 text-xs font-bold text-cyan-300 transition hover:bg-cyan-600 hover:text-white hover:border-cyan-500"
+                      className="inline-flex w-full items-center justify-between rounded-lg bg-zinc-800/80 border border-zinc-700/60 px-3 py-1.5 text-xs font-medium text-zinc-200 transition hover:bg-zinc-700 hover:text-white"
                       href={`/consulta/${module.slug}`}
                     >
                       <span>Executar Consulta</span>
@@ -351,14 +390,14 @@ export default function DashboardPage() {
                     </Link>
                   ) : module.implemented ? (
                     <Link
-                      className="inline-flex w-full items-center justify-between rounded-xl border border-[#2a364d] bg-[#121826] px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-cyan-500 hover:text-white"
+                      className="inline-flex w-full items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-1.5 text-xs font-medium text-zinc-300 transition hover:border-zinc-700 hover:text-white"
                       href="/creditos"
                     >
                       <span>Obter Créditos</span>
                       <Coins className="h-3.5 w-3.5 text-cyan-400" />
                     </Link>
                   ) : (
-                    <span className="inline-flex w-full items-center justify-center rounded-xl bg-[#10141f] px-3 py-2 text-xs font-medium text-slate-500">
+                    <span className="inline-flex w-full items-center justify-center rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-500">
                       Em breve
                     </span>
                   )}
@@ -369,56 +408,56 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {/* Recent Queries Log Feed */}
-      <section className="space-y-3">
+      {/* Recent Queries Log Feed (ReUI Table/List block) */}
+      <section className="space-y-3" id="queries">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="h-3 w-1 rounded-full bg-cyan-500" />
-            <h2 className="text-xs font-bold tracking-wider text-slate-300 uppercase">
+            <span className="h-2 w-2 rounded-full bg-cyan-400" />
+            <h2 className="text-xs font-semibold tracking-wider text-zinc-300 uppercase">
               Registro de Atividades Recentes
             </h2>
           </div>
-          <Link className="text-xs text-slate-400 hover:text-cyan-400" href="/catalogo">
+          <Link className="text-xs text-zinc-400 hover:text-zinc-200 transition" href="/catalogo">
             Explorar catálogo →
           </Link>
         </div>
 
         {queries.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-[#1e293f] bg-[#0c1018] p-10 text-center">
-            <Terminal className="mx-auto h-8 w-8 text-slate-600" />
-            <p className="mt-3 text-xs font-bold text-slate-300">Nenhuma consulta realizada ainda.</p>
-            <p className="mt-1 text-[11px] text-slate-500">Seus resultados e relatórios ficarão registrados aqui.</p>
+          <div className="rounded-xl border border-dashed border-zinc-800 bg-zinc-900/20 p-10 text-center">
+            <Terminal className="mx-auto h-8 w-8 text-zinc-600" />
+            <p className="mt-3 text-xs font-semibold text-zinc-300">Nenhuma consulta realizada ainda.</p>
+            <p className="mt-1 text-[11px] text-zinc-500">Seus resultados e relatórios ficarão registrados aqui.</p>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-2xl border border-[#1a2233] bg-[#0c1018] shadow-card">
-            <ul className="divide-y divide-[#172030]">
+          <div className="overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-900/30">
+            <ul className="divide-y divide-zinc-800/60">
               {queries.map((query) => {
                 const conf = statusColors[query.status];
                 const StatusIcon = conf.icon;
 
                 return (
                   <li
-                    className="flex flex-col gap-3 px-5 py-3.5 transition hover:bg-[#101522] sm:flex-row sm:items-center sm:justify-between"
+                    className="flex flex-col gap-3 px-4 py-3 transition hover:bg-zinc-800/30 sm:flex-row sm:items-center sm:justify-between"
                     key={query.id}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#121826] text-slate-400 border border-[#1e293f]">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-800/80 text-zinc-400 border border-zinc-700/60">
                         <Terminal className="h-4 w-4 text-cyan-400" />
                       </div>
                       <div>
                         <Link
-                          className="text-xs font-bold text-white hover:text-cyan-300"
+                          className="text-xs font-semibold text-zinc-200 hover:text-white transition"
                           href={`/consulta/${query.moduleSlug}`}
                         >
                           {query.moduleSlug}
                         </Link>
-                        <p className="text-[10px] text-slate-500">{formatDate(query.createdAt)}</p>
+                        <p className="text-[10px] text-zinc-500">{formatDate(query.createdAt)}</p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-3">
                       <span
-                        className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${conf.badge}`}
+                        className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-semibold ${conf.badge}`}
                       >
                         <span className={`h-1.5 w-1.5 rounded-full ${conf.dot}`} />
                         <StatusIcon className={`h-3 w-3 ${query.status === 'running' ? 'animate-spin' : ''}`} />
@@ -426,7 +465,7 @@ export default function DashboardPage() {
                       </span>
 
                       <Link
-                        className="rounded-lg p-1.5 text-slate-500 hover:bg-[#182030] hover:text-white"
+                        className="rounded-md p-1.5 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200 transition"
                         href={`/consulta/${query.moduleSlug}`}
                       >
                         <ChevronRight className="h-4 w-4" />
@@ -439,6 +478,9 @@ export default function DashboardPage() {
           </div>
         )}
       </section>
+
+      {/* Observability Panel */}
+      <AthenasApiStatusPanel />
     </PageFrame>
   );
 }
@@ -451,12 +493,12 @@ function LoadingPanel() {
   return (
     <PageFrame>
       <div className="space-y-4 animate-pulse">
-        <div className="h-32 rounded-2xl bg-[#0d121c]" />
         <div className="grid gap-4 sm:grid-cols-3">
-          <div className="h-28 rounded-2xl bg-[#0d121c]" />
-          <div className="h-28 rounded-2xl bg-[#0d121c]" />
-          <div className="h-28 rounded-2xl bg-[#0d121c]" />
+          <div className="h-28 rounded-xl bg-zinc-900/40" />
+          <div className="h-28 rounded-xl bg-zinc-900/40" />
+          <div className="h-28 rounded-xl bg-zinc-900/40" />
         </div>
+        <div className="h-32 rounded-xl bg-zinc-900/40" />
       </div>
     </PageFrame>
   );
@@ -464,7 +506,7 @@ function LoadingPanel() {
 
 function ErrorPanel({ message, onRetry }: Readonly<{ message: string; onRetry?: () => void }>) {
   return (
-    <div className="flex items-start gap-3 rounded-2xl border border-red-900/60 bg-red-950/30 p-6 text-xs text-red-300" role="alert">
+    <div className="flex items-start gap-3 rounded-xl border border-red-900/60 bg-red-950/30 p-6 text-xs text-red-300" role="alert">
       <AlertTriangle className="h-5 w-5 shrink-0 text-red-400" />
       <div>
         <p className="font-bold text-sm text-red-200">Falha de comunicação</p>

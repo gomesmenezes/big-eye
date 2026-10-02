@@ -81,7 +81,7 @@ function QueryStatusBadge({ compact = false }: Readonly<{ compact?: boolean }>) 
     return (
       <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-900/60 bg-cyan-950/30 px-2.5 py-1 text-[10px] font-semibold text-cyan-300">
         <LoaderCircle className="h-3 w-3 animate-spin" />
-        Consultando Athenas
+        Consultando Big Eye
       </span>
     );
   }
@@ -99,7 +99,7 @@ function QueryStatusBadge({ compact = false }: Readonly<{ compact?: boolean }>) 
     return (
       <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-700 bg-slate-900/70 px-2.5 py-1 text-[10px] font-semibold text-slate-300">
         <span className="h-1.5 w-1.5 rounded-full bg-slate-500" />
-        Athenas desativada
+        Rede Big Eye desativada
       </span>
     );
   }
@@ -126,8 +126,8 @@ export function AthenasStatusBadge() {
   return (
     <Link
       className="inline-flex rounded-full outline-none transition hover:brightness-125 focus-visible:ring-2 focus-visible:ring-cyan-400"
-      href="/dashboard#athenas-api-status"
-      title="Ver detalhes do status da API Athenas"
+      href="/dashboard#api-status"
+      title="Ver detalhes do status da rede Big Eye"
     >
       <QueryStatusBadge compact />
     </Link>
@@ -159,16 +159,16 @@ export function AthenasStatusSidebar({ onNavigate }: Readonly<{ onNavigate?: () 
 
   return (
     <Link
-      className="mb-6 flex items-center justify-between rounded-xl border border-[#1c2436] bg-[#0f1420] px-3.5 py-2 text-[11px] transition hover:border-cyan-800/70 hover:bg-[#121a28]"
-      href="/dashboard#athenas-api-status"
+      className="mb-4 flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-1.5 text-[11px] transition hover:border-zinc-700 hover:bg-zinc-800/60"
+      href="/dashboard#api-status"
       onClick={onNavigate}
-      title={status.isError && status.data ? 'A atualização falhou; exibindo a última leitura.' : 'Ver status da API Athenas'}
+      title={status.isError && status.data ? 'A atualização falhou; exibindo a última leitura.' : 'Ver status da rede Big Eye'}
     >
       <span className="flex items-center gap-2">
         <span className={`h-2 w-2 rounded-full ${dot}`} />
-        <span className="font-medium text-slate-300">API Big Eye</span>
+        <span className="font-medium text-zinc-300">API Big Eye</span>
       </span>
-      <span className={`text-[10px] font-bold ${status.isError ? 'text-amber-300' : 'text-cyan-300'}`}>
+      <span className={`text-[10px] font-semibold ${status.isError ? 'text-amber-300' : 'text-emerald-400'}`}>
         {summary}
       </span>
     </Link>
@@ -183,29 +183,29 @@ export function AthenasApiStatusPanel() {
 
   return (
     <section
-      aria-labelledby="athenas-api-status-title"
-      className="rounded-2xl border border-[#1a2233] bg-gradient-to-br from-[#0d121c] to-[#0b0f18] p-5 shadow-card sm:p-6"
-      id="athenas-api-status"
+      aria-labelledby="services-api-status-title"
+      className="rounded-xl border border-zinc-800/80 bg-zinc-900/30 p-5 sm:p-6"
+      id="api-status"
     >
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
         <div>
           <div className="flex flex-wrap items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-cyan-800/50 bg-cyan-950/50 text-cyan-300">
-              <Activity className="h-4 w-4" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-700/60 bg-zinc-800 text-zinc-300">
+              <Activity className="h-4 w-4 text-emerald-400" />
             </div>
-            <h2 className="text-sm font-bold tracking-wide text-white" id="athenas-api-status-title">
-              Status da API Athenas
+            <h2 className="text-sm font-semibold tracking-wide text-white" id="services-api-status-title">
+              Status da Rede Big Eye
             </h2>
             <QueryStatusBadge />
           </div>
-          <p className="mt-2 max-w-3xl text-xs leading-relaxed text-slate-400">
+          <p className="mt-2 max-w-3xl text-xs leading-relaxed text-zinc-400">
             {connectedData?.description ?? 'Disponibilidade e uptime dos endpoints usados nas consultas.'}
           </p>
         </div>
 
         <button
-          aria-label="Atualizar status da API Athenas"
-          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-[#25314a] bg-[#111827] px-3 py-2 text-[11px] font-semibold text-slate-300 transition hover:border-cyan-700 hover:text-white disabled:cursor-wait disabled:opacity-60"
+          aria-label="Atualizar status da rede Big Eye"
+          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-300 transition hover:border-zinc-700 hover:text-white disabled:cursor-wait disabled:opacity-60"
           disabled={status.isFetching}
           onClick={() => void status.refetch()}
           type="button"
@@ -225,20 +225,20 @@ export function AthenasApiStatusPanel() {
           <p>
             {data
               ? 'Não foi possível atualizar. Os dados abaixo são da última leitura recebida.'
-              : 'Não foi possível consultar o status. Verifique a conexão e a configuração da integração Athenas.'}
+              : 'Não foi possível consultar o status. Verifique a conexão e a configuração da rede Big Eye.'}
           </p>
         </div>
       ) : null}
 
       {!data ? (
-        <div className="mt-5 flex items-center gap-2 rounded-xl border border-[#1c2436] bg-[#0b1019] p-5 text-xs text-slate-400" role={status.isError ? 'alert' : 'status'}>
-          {status.isError ? <XCircle className="h-4 w-4 text-slate-500" /> : <LoaderCircle className="h-4 w-4 animate-spin text-cyan-400" />}
+        <div className="mt-5 flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/40 p-5 text-xs text-zinc-400" role={status.isError ? 'alert' : 'status'}>
+          {status.isError ? <XCircle className="h-4 w-4 text-zinc-500" /> : <LoaderCircle className="h-4 w-4 animate-spin text-cyan-400" />}
           {status.isError ? 'Status não disponível no momento.' : 'Consultando a disponibilidade dos endpoints…'}
         </div>
       ) : data.status === 'disabled' ? (
-        <div className="mt-5 flex items-center gap-2 rounded-xl border border-[#263149] bg-[#101725] p-5 text-xs text-slate-300" role="status">
-          <Clock3 className="h-4 w-4 shrink-0 text-slate-400" />
-          A integração Athenas está desativada neste ambiente. Ative o provider Athenas para consultar a disponibilidade dos endpoints.
+        <div className="mt-5 flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/40 p-5 text-xs text-zinc-300" role="status">
+          <Clock3 className="h-4 w-4 shrink-0 text-zinc-400" />
+          A integração com a rede de dados está desativada neste ambiente. Ative os serviços da Big Eye para consultar a disponibilidade dos endpoints.
         </div>
       ) : (
         <>
@@ -248,8 +248,8 @@ export function AthenasApiStatusPanel() {
               ['7 dias', data.uptime['7d']],
               ['31 dias', data.uptime['31d']],
             ] as const).map(([period, value]) => (
-              <div className="rounded-xl border border-[#1c2436] bg-[#0b1019] px-4 py-3" key={period}>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Uptime · {period}</p>
+              <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/50 px-4 py-3" key={period}>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Uptime · {period}</p>
                 <p className="mt-1 text-xl font-bold text-white">{formatPercent(value)}</p>
               </div>
             ))}
@@ -259,22 +259,22 @@ export function AthenasApiStatusPanel() {
             <SummaryCount label="Operacionais" count={data.summary.operational} tone="text-emerald-300 border-emerald-900/50 bg-emerald-950/30" />
             <SummaryCount label="Degradados" count={data.summary.degraded} tone="text-amber-300 border-amber-900/50 bg-amber-950/30" />
             <SummaryCount label="Indisponíveis" count={data.summary.unavailable} tone="text-red-300 border-red-900/50 bg-red-950/30" />
-            <SummaryCount label="Sem tráfego" count={data.summary.idle} tone="text-slate-300 border-slate-700 bg-slate-900/60" />
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#263149] bg-[#101725] px-2.5 py-1 text-[10px] text-slate-300">
+            <SummaryCount label="Sem tráfego" count={data.summary.idle} tone="text-zinc-300 border-zinc-700 bg-zinc-800/60" />
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-900/80 px-2.5 py-1 text-[10px] text-zinc-300">
               <Server className="h-3 w-3" />
               {data.summary.total} endpoints
             </span>
           </div>
 
-          <div className="mt-5 overflow-hidden rounded-xl border border-[#1c2436] bg-[#0a0e16]">
-            <div className="flex items-center justify-between border-b border-[#1c2436] px-4 py-3">
+          <div className="mt-5 overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-900/40">
+            <div className="flex items-center justify-between border-b border-zinc-800/80 px-4 py-3">
               <div>
-                <h3 className="text-xs font-bold text-slate-200">Disponibilidade por endpoint</h3>
-                <p className="mt-0.5 text-[10px] text-slate-500">Uptime de 24 horas e latência média.</p>
+                <h3 className="text-xs font-semibold text-zinc-200">Disponibilidade por endpoint</h3>
+                <p className="mt-0.5 text-[10px] text-zinc-500">Uptime de 24 horas e latência média.</p>
               </div>
               <button
                 aria-expanded={expanded}
-                className="text-[10px] font-semibold text-cyan-400 hover:text-cyan-300"
+                className="text-[10px] font-medium text-cyan-400 hover:text-cyan-300 transition"
                 onClick={() => setExpanded((value) => !value)}
                 type="button"
               >
@@ -286,13 +286,13 @@ export function AthenasApiStatusPanel() {
               data.endpoints.length > 0 ? (
                 <div className="grid max-h-[28rem] gap-2 overflow-y-auto p-3 sm:grid-cols-2 xl:grid-cols-3">
                   {data.endpoints.map((endpoint) => (
-                    <article className="rounded-lg border border-[#1b263a] bg-[#0d121c] p-3" key={endpoint.id}>
+                    <article className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3" key={endpoint.id}>
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <h4 className="truncate text-xs font-bold text-slate-200" title={endpoint.name}>
+                          <h4 className="truncate text-xs font-semibold text-zinc-200" title={endpoint.name}>
                             {endpoint.name}
                           </h4>
-                          <p className="mt-0.5 truncate text-[10px] text-slate-500" title={`${endpoint.group} · ${endpoint.path}`}>
+                          <p className="mt-0.5 truncate text-[10px] text-zinc-500" title={`${endpoint.group} · ${endpoint.path}`}>
                             {endpoint.group} · {endpoint.path}
                           </p>
                         </div>
@@ -300,12 +300,12 @@ export function AthenasApiStatusPanel() {
                           {endpointStatus[endpoint.status].label}
                         </span>
                       </div>
-                      <div className="mt-3 flex items-center justify-between border-t border-[#1b263a] pt-2 text-[10px]">
-                        <span className="text-slate-500">
-                          Uptime 24h <strong className="ml-1 text-slate-300">{formatPercent(endpoint.uptime['24h'])}</strong>
+                      <div className="mt-3 flex items-center justify-between border-t border-zinc-800/80 pt-2 text-[10px]">
+                        <span className="text-zinc-500">
+                          Uptime 24h <strong className="ml-1 text-zinc-300">{formatPercent(endpoint.uptime['24h'])}</strong>
                         </span>
-                        <span className="text-slate-500">
-                          Latência <strong className="ml-1 text-slate-300">{endpoint.avgResponseMs === null ? '—' : `${Math.round(endpoint.avgResponseMs)} ms`}</strong>
+                        <span className="text-zinc-500">
+                          Latência <strong className="ml-1 text-zinc-300">{endpoint.avgResponseMs === null ? '—' : `${Math.round(endpoint.avgResponseMs)} ms`}</strong>
                         </span>
                       </div>
                     </article>
