@@ -41,10 +41,12 @@ pnpm --filter @big-eye/core db:seed
 Com o banco pronto, inicie API, worker e web juntos na raiz:
 
 ```bash
-npm run dev
+pnpm run dev
 ```
 
-Esse comando carrega o `.env` da raiz e inicia os três serviços. Use `Ctrl+C` para encerrar.
+Esse comando carrega o `.env` da raiz, verifica Postgres e Redis e inicia os três serviços. Se as dependências locais nas portas padrão estiverem paradas, sobe os respectivos serviços do Compose e aguarda a saúde dos containers; no macOS, também abre o Docker Desktop se necessário. URLs remotas ou portas personalizadas precisam estar disponíveis conforme o `.env`.
+
+Use `Ctrl+C` para encerrar os processos dessa execução e liberar as portas dos apps. Os containers e seus dados continuam disponíveis para a próxima execução. A URL escolhida para o web aparece no terminal; portas ocupadas são puladas, exceto a porta fixa da API, que gera uma mensagem antes de iniciar os apps.
 
 A API fica em `http://localhost:3001`, o web em `http://localhost:3000`, a documentação OpenAPI em `/docs` e os endpoints de saúde em `/health` e `/ready`.
 
